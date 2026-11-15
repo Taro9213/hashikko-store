@@ -1,0 +1,20 @@
+# Hashikko store service (Cloudflare Worker): Google sign-in, channels, sharing, reports, follows, moderation.
+# Steps are in ../SETUP.md. In short:
+#   npx wrangler kv namespace create DB      → put the id below
+#   npx wrangler deploy
+#   npx wrangler secret put GITHUB_TOKEN          (fine-grained token: Issues read/write on hashikko-store only)
+#   npx wrangler secret put GOOGLE_CLIENT_SECRET
+#   npx wrangler secret put ADMIN_TOKEN           (a long random password for the review desk)
+#   npx wrangler secret put RATE_SALT             (any long random text)
+name = "hashikko-store"
+main = "worker.mjs"
+compatibility_date = "2026-10-01"
+
+[vars]
+STORE_REPO = "OWNER/hashikko-store"
+PUBLIC_URL = "https://hashikko-store.WORKERS_SUBDOMAIN.workers.dev/"
+GOOGLE_CLIENT_ID = "GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+
+[[kv_namespaces]]
+binding = "DB"
+id = "KV_NAMESPACE_ID"

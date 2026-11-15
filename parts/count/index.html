@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://app.hashikko/base.css">
+<script src="https://app.hashikko/sdk.js"></script>
+<script type="application/json" id="hashikko-manifest">
+{"id":"count","name":"Word count","description":"Count words and characters in any text","emoji":"🔤","version":"1.0.0","keyboard":true,"permissions":[]}
+</script>
+<style>
+.wrap { height: 100%; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.nums { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.num { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.num b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+.num small { color: var(--muted); font-size: 11.5px; }
+.num.main { grid-column: 1 / 3; background: var(--accent-soft); border-color: transparent; }
+.num.main b { font-size: 36px; color: var(--accent); }
+textarea { flex: 1; min-height: 0; resize: none; padding: 12px; border-radius: 12px; border: 1px solid var(--line); outline: 0; background: var(--surface); color: var(--text); font: 13px/1.7 inherit; font-family: inherit; user-select: text; scrollbar-width: thin; }
+textarea:focus { border-color: var(--accent); }
+.clear { align-self: flex-end; color: var(--muted); padding: 6px 12px; border-radius: 8px; }
+.clear:hover { background: var(--hover); color: var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="nums">
+    <div class="num main"><b id="words">0</b><small>words</small></div>
+    <div class="num"><b id="chars">0</b><small>characters</small></div>
+    <div class="num"><b id="nospace">0</b><small>characters, no spaces</small></div>
+    <div class="num"><b id="lines">0</b><small>lines</small></div>
+    <div class="num"><b id="read">0 min</b><small>reading time</small></div>
+  </div>
+  <textarea id="t" placeholder="Paste your text here (Ctrl + V), or just type" spellcheck="false"></textarea>
+  <button class="clear" id="clear">Clear</button>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const len = (s) => Array.from(s).length;   // count emoji and accented letters as one character
+function count() {
+  const s = $('t').value;
+  const words = (s.trim().match(/\S+/g) || []).length;
+  $('words').textContent = words.toLocaleString('en-US');
+  $('chars').textContent = len(s.replace(/\n/g, '')).toLocaleString('en-US');
+  $('nospace').textContent = len(s.replace(/\s/g, '')).toLocaleString('en-US');
+  $('lines').textContent = s ? s.split('\n').length.toLocaleString('en-US') : '0';
+  const min = words / 238;   // average adult silent reading speed (words per minute)
+  $('read').textContent = !words ? '0 min' : min < 1 ? '< 1 min' : Math.round(min) + ' min';
+}
+$('t').addEventListener('input', count);
+$('clear').addEventListener('click', () => { $('t').value = ''; count(); $('t').focus(); });
+hashikko.onVisible((v) => { if (v) { $('t').focus(); hashikko.focus(); } });
+</script>
+</body>
+</html>

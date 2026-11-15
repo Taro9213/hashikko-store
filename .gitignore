@@ -1,0 +1,8 @@
+# Made by tools/review-demo.mjs (a copy of the store for trying the flow on this computer)
+.demo/
+
+# Secrets for the review desk (tools/desk.mjs). Never commit.
+desk.secrets.json
+
+# Built by GitHub Actions (tools/build-web.mjs)
+web/

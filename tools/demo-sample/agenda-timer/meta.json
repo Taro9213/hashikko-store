@@ -1,0 +1,19 @@
+{
+    "id":  "agenda-timer",
+    "author":  "Maya Chen",
+    "channel":  "a1b2c3d4e5f6",
+    "handle":  "mayamakes",
+    "issue":  0,
+    "added":  "2026-11-12",
+    "updated":  "2026-11-14",
+    "sample":  true,
+    "keywords":  [
+                     "meeting",
+                     "agenda",
+                     "timebox",
+                     "topics",
+                     "facilitator",
+                     "standup",
+                     "timer"
+                 ]
+}

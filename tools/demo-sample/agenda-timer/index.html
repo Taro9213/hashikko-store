@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://app.hashikko/base.css">
+<script src="https://app.hashikko/sdk.js"></script>
+<script type="application/json" id="hashikko-manifest">
+{"id":"agenda-timer","name":"Agenda timer","description":"Keep each meeting topic on time","emoji":"🗂️","version":"1.0.0","keyboard":true,"permissions":["storage"]}
+</script>
+<style>
+.wrap { height: 100%; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.now { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; transition: background .3s; }
+.now.over { background: rgba(220, 38, 38, .12); border-color: transparent; }
+.now small { color: var(--muted); font-size: 11.5px; }
+.now b { display: block; font-size: 15px; margin-top: 2px; min-height: 20px; }
+.left { font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 4px; }
+.now.over .left { color: #dc2626; }
+.bar { height: 5px; border-radius: 3px; background: var(--track); overflow: hidden; margin-top: 8px; }
+.fill { height: 100%; width: 0; background: var(--accent); }
+.btns { display: flex; gap: 6px; }
+.btns button { flex: 1; padding: 10px; border-radius: 10px; font-weight: 700; min-height: 38px; }
+.go { background: var(--accent); color: #fff; }
+@media (prefers-color-scheme: dark) { .go { color: #06302b; } }
+.ghost { background: var(--surface); border: 1px solid var(--line); }
+.list { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0; scrollbar-width: thin; }
+.item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 10px; }
+.item.cur { background: var(--accent-soft); }
+.item.done span { color: var(--muted); text-decoration: line-through; }
+.item span { flex: 1; min-width: 0; word-break: break-word; }
+.item em { font-style: normal; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.item .x { color: var(--muted); width: 22px; height: 22px; border-radius: 6px; visibility: hidden; }
+.item:hover .x { visibility: visible; }
+.add { display: flex; gap: 6px; }
+.add input { min-width: 0; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line); outline: 0; background: var(--surface); color: var(--text); font: inherit; user-select: text; }
+.add input:focus { border-color: var(--accent); }
+.add #topic { flex: 1; }
+.add #mins { width: 52px; text-align: center; }
+.add button { padding: 0 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-weight: 700; }
+.total { color: var(--muted); font-size: 12px; text-align: right; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="now" id="now">
+    <small id="nowLabel">Add your topics below</small>
+    <b id="nowTopic"></b>
+    <div class="left" id="left">0:00</div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+  </div>
+  <div class="btns"><button class="go" id="go">Start</button><button class="ghost" id="next">Next topic</button></div>
+  <ul class="list" id="list"></ul>
+  <div class="total" id="total"></div>
+  <div class="add"><input id="topic" type="text" placeholder="Topic" spellcheck="false"><input id="mins" type="text" inputmode="numeric" value="5" aria-label="Minutes"><button id="addBtn">Add</button></div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+let items = [];          // { text, mins, done }
+let cur = 0, endAt = 0, left = 0, tick = null;
+const save = () => hashikko.call('storage.set', { key: 'agenda', value: items });
+const fmt = (s) => { const n = Math.abs(Math.round(s)); return (s < 0 ? '+' : '') + Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0'); };
+
+function render() {
+  const it = items[cur];
+  $('nowLabel').textContent = !items.length ? 'Add your topics below' : it ? `Topic ${cur + 1} of ${items.length}` : 'All topics done';
+  $('nowTopic').textContent = it ? it.text : '';
+  const total = it ? it.mins * 60 : 0;
+  $('left').textContent = fmt(it ? left : 0);
+  $('fill').style.width = total ? Math.min(100, (1 - left / total) * 100) + '%' : '0';
+  $('now').classList.toggle('over', !!it && left < 0);
+  $('go').textContent = tick ? 'Pause' : 'Start';
+  const frag = document.createDocumentFragment();
+  items.forEach((x, i) => {
+    const li = document.createElement('li');
+    li.className = 'item' + (i === cur ? ' cur' : '') + (x.done ? ' done' : '');
+    const s = document.createElement('span'); s.textContent = x.text;
+    const m = document.createElement('em'); m.textContent = x.mins + ' min';
+    const del = document.createElement('button'); del.className = 'x'; del.textContent = '✕'; del.title = 'Remove';
+    del.addEventListener('click', () => { items.splice(i, 1); if (cur >= items.length) cur = Math.max(0, items.length - 1); stop(); reset(); save(); });
+    li.append(s, m, del);
+    frag.append(li);
+  });
+  $('list').replaceChildren(frag);
+  const sum = items.reduce((a, x) => a + x.mins, 0);
+  $('total').textContent = items.length ? `Total ${sum} min` : '';
+}
+function stop() { clearInterval(tick); tick = null; }
+function reset() { left = items[cur] ? items[cur].mins * 60 : 0; render(); }
+$('go').addEventListener('click', () => {
+  if (!items[cur]) return;
+  if (tick) { stop(); render(); return; }
+  endAt = Date.now() + left * 1000;
+  tick = setInterval(() => { left = (endAt - Date.now()) / 1000; render(); }, 250);
+  render();
+});
+$('next').addEventListener('click', () => {
+  if (!items[cur]) return;
+  items[cur].done = true;
+  const running = !!tick;
+  stop();
+  cur = Math.min(cur + 1, items.length);
+  reset();
+  if (running && items[cur]) $('go').click();
+  save();
+});
+function add() {
+  const t = $('topic').value.trim();
+  const m = Math.max(1, Math.min(240, parseInt($('mins').value, 10) || 5));
+  if (!t) { $('topic').focus(); return; }
+  items.push({ text: t, mins: m, done: false });
+  $('topic').value = '';
+  if (items.length === 1) { cur = 0; reset(); } else render();
+  save();
+}
+$('addBtn').addEventListener('click', add);
+$('topic').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) add(); });
+$('mins').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) add(); });
+hashikko.call('storage.get', { key: 'agenda' }).then((r) => {
+  if (r && Array.isArray(r.value)) items = r.value;
+  cur = Math.max(0, items.findIndex((x) => !x.done));
+  if (items.length && items.every((x) => x.done)) cur = items.length;
+  reset();
+});
+hashikko.onVisible((v) => { if (v) render(); });
+render();
+</script>
+</body>
+</html>

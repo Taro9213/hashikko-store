@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review desk: Hashikko Store</title>
+<style>
+:root {
+  --bg: #f4f4f6; --surface: #fff; --text: #16161a; --muted: #5f5f6a; --line: rgba(0,0,0,.09);
+  --accent: #0f9f8f; --accent-ink: #0b7d71; --accent-soft: rgba(15,159,143,.11); --warn: #b45309; --warn-soft: rgba(217,119,6,.13);
+  --bad: #dc2626; --bad-soft: rgba(220,38,38,.1); --blue: #2563eb; --blue-soft: rgba(59,130,246,.12); color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #17171b; --surface: #222228; --text: #f2f2f5; --muted: #a2a2ad; --line: rgba(255,255,255,.09);
+    --accent: #2dd4bf; --accent-ink: #5eead4; --accent-soft: rgba(45,212,191,.13); --warn: #fbbf24; --bad: #f87171; --blue: #60a5fa; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 "Segoe UI", system-ui, -apple-system, sans-serif; }
+header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--surface); }
+header b { font-size: 17px; }
+header .demo { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
+header a { margin-left: auto; color: var(--accent-ink); font-size: 14px; }
+.layout { display: grid; grid-template-columns: 330px 1fr; min-height: calc(100vh - 56px); }
+aside { border-right: 1px solid var(--line); padding: 12px; overflow-y: auto; }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 10px; }
+.tabs button { padding: 7px; border-radius: 9px; border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer; font-size: 14px; }
+.tabs button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.item { display: block; width: 100%; text-align: left; padding: 10px 12px; border-radius: 12px; border: 1px solid transparent; background: transparent; font: inherit; color: inherit; cursor: pointer; margin-bottom: 4px; }
+.item:hover { background: var(--surface); }
+.item.sel { background: var(--surface); border-color: var(--accent); }
+.item b { display: block; }
+.item small { color: var(--muted); }
+.pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 9px; border-radius: 999px; margin-left: 4px; vertical-align: 1px; }
+.reviewing, .open { background: var(--blue-soft); color: var(--blue); }
+.needs-changes, .paused, .warning { background: var(--warn-soft); color: var(--warn); }
+.listed, .done, .good, .reversed { background: var(--accent-soft); color: var(--accent-ink); }
+.declined, .removed, .strike, .upheld { background: var(--bad-soft); color: var(--bad); }
+.empty { color: var(--muted); padding: 30px 10px; text-align: center; font-size: 14px; }
+main { padding: 22px 28px 60px; overflow-y: auto; }
+.head { display: flex; gap: 14px; align-items: center; }
+.head .emoji { font-size: 44px; }
+.head h1 { margin: 0; font-size: 26px; }
+.head p { margin: 2px 0 0; color: var(--muted); }
+.meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 18px; font-size: 13px; align-items: center; }
+.meta span:not(.pill) { padding: 3px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); }
+.grid { display: grid; grid-template-columns: 1fr 320px; gap: 22px; align-items: start; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+.box h2 { font-size: 15px; margin: 0 0 8px; }
+.checks li { margin: 3px 0; }
+.ok { color: var(--accent-ink); font-weight: 600; }
+.err { color: var(--bad); }
+.warn { color: var(--warn); }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.checks.list { list-style: none; padding: 0; margin: 8px 0; }
+.checks.list li { margin: 6px 0; }
+.checks.list small { display: block; color: var(--muted); margin-left: 20px; font-size: 13px; }
+.frame { width: 320px; height: 520px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: var(--bg); position: sticky; top: 16px; }
+.frame iframe { width: 100%; height: 100%; border: 0; }
+.cap { color: var(--muted); font-size: 12.5px; margin: 6px 2px; text-align: center; }
+label.ck { display: flex; gap: 10px; align-items: flex-start; padding: 6px 2px; cursor: pointer; }
+label.ck input { margin-top: 4px; accent-color: var(--accent); width: 16px; height: 16px; }
+.flabel { display: block; font-weight: 700; font-size: 14px; margin: 6px 0; }
+textarea, select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; }
+textarea { min-height: 70px; resize: vertical; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.btn { padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+.btn.go { background: var(--accent); color: #fff; border-color: transparent; }
+.btn.amber { color: var(--warn); }
+.btn.red { color: var(--bad); }
+.btn:disabled { opacity: .45; cursor: default; }
+.msg { margin-top: 10px; font-weight: 600; }
+.quote { margin: 6px 0 0; padding: 8px 12px; border-left: 3px solid var(--warn); background: var(--bg); border-radius: 0 8px 8px 0; }
+.quote.none { color: var(--muted); border-color: var(--line); }
+.hist { padding: 8px 0; border-top: 1px solid var(--line); }
+.hist:first-of-type { border-top: 0; }
+.hist small { color: var(--muted); margin-left: 8px; }
+.seen { margin-top: 10px; }
+.seen > small { color: var(--muted); }
+.appcard { margin-top: 6px; max-width: 300px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); font-size: 13px; }
+.appnote { margin-top: 6px; padding: 6px 9px; border-left: 3px solid var(--warn); border-radius: 0 8px 8px 0; background: var(--surface); }
+.appnote small { display: block; color: var(--muted); font-weight: 700; font-size: 11px; }
+.who { display: flex; gap: 10px; align-items: center; }
+.who small { display: block; color: var(--muted); }
+.who .pill { margin-left: auto; }
+.av { width: 36px; height: 36px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink); display: grid; place-items: center; font-weight: 800; flex: none; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.ladder { display: flex; gap: 6px; margin: 8px 0 2px; flex-wrap: wrap; }
+.ladder span { font-size: 12px; padding: 2px 8px; border-radius: 8px; background: var(--bg); color: var(--muted); }
+.ladder span.on { background: var(--bad-soft); color: var(--bad); font-weight: 700; }
+.ladder span.w.on { background: var(--warn-soft); color: var(--warn); }
+.rulebox { display: none; margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--bad-soft); }
+.rulebox.on { display: block; }
+.howto { max-width: 680px; color: var(--muted); }
+.howto ol { padding-left: 20px; }
+details pre { max-height: 360px; overflow: auto; background: var(--bg); padding: 12px; border-radius: 10px; font-size: 12.5px; }
+@media (max-width: 980px) { .layout { grid-template-columns: 1fr; } .grid, .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header><b>Review desk</b><span class="demo">Demo on this computer</span><a href="http://127.0.0.1:4322/web/" target="_blank">Open the store website ↗</a></header>
+<div class="layout">
+  <aside>
+    <div class="tabs"><button id="t-submission" class="on">Submissions</button><button id="t-report">Reports</button><button id="t-appeal">Appeals</button><button id="t-channel">Channels</button></div>
+    <div id="list"></div>
+  </aside>
+  <main id="main">
+    <div class="howto">
+      <h1>Review desk</h1>
+      <p>Everything people send from Hashikko arrives here. Pick something on the left.</p>
+      <ol>
+        <li><b>Submissions</b>: read the automatic checks, try the part, tick the four review points, then decide.</li>
+        <li><b>Reports</b>: parts people flagged. Pause a part while you look, take it down, or close the report.</li>
+        <li><b>Appeals</b>: creators who think a decision was a mistake. Look again and answer.</li>
+        <li><b>Channels</b>: every creator and their record (warnings and strikes).</li>
+      </ol>
+      <p><b>How rule-breaks work</b> (the same ladder YouTube uses): the first rule-break is a <b>warning</b>. After that, each one is a <b>strike</b>: strike 1 stops sharing for 1 week, strike 2 for 2 weeks, and a 3rd strike within 90 days <b>removes the channel</b> and all its parts. Warnings and strikes go away after 90 days. Severe cases (scams, fake logins, malware, sexual content involving minors) remove the channel right away.</p>
+    </div>
+  </main>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const STATE = { reviewing: 'In review', 'needs-changes': 'Needs changes', listed: 'In the store', declined: 'Not accepted', open: 'Open', done: 'Done',
+  upheld: 'Upheld', reversed: 'Reversed' };
+// The store rules (same as GUIDELINES.md). Severe ones remove a channel at once.
+const RULES = [
+  ['Harmful, hateful or violent content', false],
+  ['Sexual content', false],
+  ['Scam, fake login or tricking people', true],
+  ['Hidden or harmful code (malware)', true],
+  ['Sexual content involving minors', true],
+  ["Copies someone else's work, name or logo", false],
+  ['Personal information about real people', false],
+  ['Spam or misleading description', false],
+];
+const CHECKS = [
+  ['One complete HTML file, 400 KB or less', 'A part must be a single file, so nothing is hidden in other files.'],
+  ['Part details are there', 'Name, id, description and emoji, so people know what it is.'],
+  ['Only allowed abilities', 'It may only save its own data and copy text (only right after a click).'],
+  ["Uses Hashikko's own building blocks", "It loads Hashikko's sdk.js and base styles, not someone else's code."],
+  ['No internet', "No fetch, XMLHttpRequest, WebSocket, WebRTC or sendBeacon. Parts can't send anything anywhere."],
+  ['No other websites', 'No links to other sites, new windows, embedded pages, redirects or forms sent elsewhere.'],
+  ['No hidden code', 'No eval or new Function. Very long encoded text is flagged for you to look at.'],
+  ['No tracking', 'No cookies or browser storage outside Hashikko. No pop-up boxes.'],
+];
+let data = { items: [], appeals: [], channels: [], preview: {} }, tab = 'submission', sel = null, lastKey = '';
+const fmtTime = (s) => new Date(s).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+const fmtDay = (s) => new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const nameOf = (i) => (typeof i.manifest.name === 'object' ? i.manifest.name.en : i.manifest.name) || '';
+
+async function load() {
+  const r = await (await fetch('/desk/items')).json();
+  const key = JSON.stringify([r.items.map((i) => [i.number, i.state, i.notes.length, i.paused]), r.appeals.map((a) => [a.id, a.state]),
+    r.channels.map((c) => [c.id, (c.standing.warnings || []).length, (c.standing.strikes || []).length, !!c.standing.terminated])]);
+  data = r;
+  if (key === lastKey) return;
+  lastKey = key;
+  renderList();
+  if (sel != null) show(sel, true);
+}
+const kindOf = (t) => t;
+function listFor(t) {
+  if (t === 'appeal') return data.appeals.map((a) => ({ key: 'a:' + a.id, title: `Appeal from ${a.channelName || 'a creator'}`, sub: a.ref, state: a.state }));
+  if (t === 'channel') return data.channels.map((c) => ({ key: 'c:' + c.id, title: c.name, sub: '@' + c.handle + ` · ${c.followers || 0} followers`,
+    state: c.standing.terminated ? 'removed' : c.standing.strikes.length ? 'strike' : c.standing.warnings.length ? 'warning' : 'good' }));
+  return data.items.filter((i) => i.kind === t).map((i) => ({ key: 'i:' + i.number,
+    title: i.kind === 'report' ? 'Report: ' + i.id : (i.manifest.emoji || '🧩') + ' ' + (nameOf(i) || 'Untitled'),
+    sub: `#${i.number} · ` + (i.kind === 'report' ? `${Object.keys(i.reporters || {}).length} reporter(s)` + (i.paused ? ' · paused' : '') : (i.channel ? `${i.channel.name} @${i.channel.handle}` : 'no channel')),
+    state: i.state }));
+}
+const PILL = { removed: 'Removed', strike: 'Strikes', warning: 'Warning', good: 'Good standing' };
+function renderList() {
+  const open = (t) => listFor(t).filter((x) => x.state === 'reviewing' || x.state === 'open').length;
+  for (const t of ['submission', 'report', 'appeal', 'channel']) {
+    const label = { submission: 'Submissions', report: 'Reports', appeal: 'Appeals', channel: 'Channels' }[t];
+    $('t-' + t).textContent = label + (t !== 'channel' && open(t) ? ` (${open(t)})` : '');
+  }
+  const list = listFor(tab);
+  $('list').innerHTML = list.length ? list.map((x) => `<button class="item${x.key === sel ? ' sel' : ''}" data-k="${x.key}">
+    <b>${esc(x.title)}<span class="pill ${x.state}">${esc(STATE[x.state] || PILL[x.state] || x.state)}</span></b><small>${esc(x.sub)}</small></button>`).join('')
+    : `<p class="empty">Nothing here yet.</p>`;
+  document.querySelectorAll('.item').forEach((b) => b.addEventListener('click', () => show(b.dataset.k)));
+}
+function previewDoc(html) {
+  const p = data.preview;
+  const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; font-src data:">`;
+  return html.replace(/<link[^>]+href=["']https:\/\/app\.hashikko\/base\.css["'][^>]*>/i, () => `<style>${p.css}</style>`)
+    .replace(/<script[^>]+src=["']https:\/\/app\.hashikko\/sdk\.js["'][^>]*><\/script>/i, () => `<script>${p.sdk}<\/script>`)
+    .replace(/<head([^>]*)>/i, (m) => m + csp);
+}
+const history = (i) => i.notes.length ? `<div class="box"><h2>Decision history</h2>${i.notes.map((n) => `<div class="hist"><b>${esc(n.action)}</b><small>${esc(fmtTime(n.at))}</small>${n.text ? `<div class="quote">“${esc(n.text)}”</div>` : ''}</div>`).join('')}</div>` : '';
+
+// The rule-break ladder for a channel: warning → strike 1 → strike 2 → removed
+function ladder(st) {
+  if (!st) return '';
+  const w = (st.warnings || []).length, s = (st.strikes || []).length, t = !!st.terminated;
+  return `<div class="ladder"><span class="w${w || s || t ? ' on' : ''}">Warning</span><span class="${s >= 1 || t ? 'on' : ''}">Strike 1</span><span class="${s >= 2 || t ? 'on' : ''}">Strike 2</span><span class="${t ? 'on' : ''}">Removed</span></div>
+    ${st.restrictedUntil ? `<p class="warn small">Can't share until ${esc(fmtDay(st.restrictedUntil))}</p>` : ''}
+    ${[...(st.warnings || []).map((x) => ['Warning', x]), ...(st.strikes || []).map((x, n) => ['Strike ' + (n + 1), x])].map(([k, x]) => `<p class="small muted">${k} · ${esc(fmtDay(x.at))} · ${esc(x.rule)}${x.note ? ` — “${esc(x.note)}”` : ''}</p>`).join('')}
+    ${t ? `<p class="err small">Removed ${esc(fmtDay(st.terminated.at))} · ${esc(st.terminated.rule)}</p>` : ''}`;
+}
+function channelBox(title, p) {
+  if (!p) return `<div class="box"><h2>${title}</h2><p class="muted">Not known (no channel).</p></div>`;
+  const rows = [];
+  if (p.sent) rows.push(`<li>Parts sent: <b>${p.sent}</b> · in the store ${p.listed} · needs changes ${p.changes} · declined ${p.declined}</li>`);
+  if (p.reportsAgainst) rows.push(`<li class="${p.takenDown ? 'err' : ''}">Reports about their parts: <b>${p.reportsAgainst}</b>${p.takenDown ? ` · taken down ${p.takenDown}` : ''}</li>`);
+  if (p.reportsSent) rows.push(`<li>Reports they sent: <b>${p.reportsSent}</b> · led to a takedown ${p.reportsActedOn}</li>`);
+  const first = title === 'Who sent it' && p.sent === 1;
+  return `<div class="box"><h2>${title}</h2>
+    <div class="who"><span class="av">${esc((p.name || '?').trim()[0] || '?').toUpperCase()}</span><div><b>${esc(p.name || 'No name')}</b>
+    <small>${p.handle ? '@' + esc(p.handle) + ' · ' : ''}channel ${esc(p.id)}${p.created ? ' · since ' + esc(fmtDay(p.created)) : ''}</small></div>
+    ${first ? '<span class="pill open">First part</span>' : ''}</div>
+    ${ladder(p.standing)}
+    ${rows.length ? `<ul class="checks">${rows.join('')}</ul>` : ''}</div>`;
+}
+const ruleBox = (label) => `<div class="rulebox" id="rulebox"><label class="flabel" for="rule">${label}</label>
+  <select id="rule"><option value="">Choose a rule…</option>${RULES.map(([r, sev]) => `<option value="${esc(r)}" data-severe="${sev}">${esc(r)}${sev ? ' (severe: removes the channel)' : ''}</option>`).join('')}</select>
+  <p class="small" id="ruleNext"></p></div>`;
+function wireRule(p) {
+  const upd = () => {
+    const o = $('rule').selectedOptions[0];
+    const severe = o && o.dataset.severe === 'true';
+    const st = p && p.standing;
+    const w = st ? (st.warnings || []).length : 0, s = st ? (st.strikes || []).length : 0;
+    $('ruleNext').textContent = !$('rule').value ? '' : severe ? 'Severe: the channel is removed now, with all its parts.'
+      : !w && !s ? 'This will be their first warning. Nothing is restricted.' : s >= 2 ? 'This is strike 3: the channel is removed, with all its parts.'
+      : `This will be strike ${s + 1}: they can't share for ${s ? '2 weeks' : '1 week'}.`;
+  };
+  $('rule').addEventListener('change', upd);
+}
+
+function show(k, keep) {
+  sel = k;
+  if (!keep) renderList();
+  const [t, id] = k.split(':');
+  if (t === 'a') return showAppeal(data.appeals.find((a) => a.id === id));
+  if (t === 'c') return showChannel(data.channels.find((c) => c.id === id));
+  const i = data.items.find((x) => x.number === Number(id));
+  if (!i) return;
+  return i.kind === 'report' ? showReport(i) : showSubmission(i);
+}
+
+function showSubmission(i) {
+  const open = i.state === 'reviewing' || i.state === 'needs-changes';
+  const checks = (i.ok
+    ? `<p class="ok">✓ Passed all ${CHECKS.length} checks</p><ul class="checks list">${CHECKS.map(([t, why]) => `<li><span class="ok">✓</span> <b>${esc(t)}</b><small>${esc(why)}</small></li>`).join('')}</ul>`
+    : `<ul class="checks">${i.errors.map((e) => `<li class="err">✗ ${esc(e)}</li>`).join('')}</ul>`)
+    + `<p class="muted small">The computer reads the code before you do. It catches rule-breaking code, but it can't tell whether a part is useful, honest or kind. That's your job below.</p>`;
+  const warns = i.warnings.length ? `<h2 style="margin-top:12px">Look closely</h2><ul class="checks">${i.warnings.map((w) => `<li class="warn">! ${esc(w)}</li>`).join('')}</ul>` : '';
+  $('main').innerHTML = `
+  <div class="head"><span class="emoji">${esc(i.manifest.emoji || '🧩')}</span><div><h1>${esc(nameOf(i))}</h1><p>${esc(typeof i.manifest.description === 'object' ? i.manifest.description.en : i.manifest.description)}</p></div></div>
+  <div class="meta"><span>#${i.number}</span><span>id: ${esc(i.manifest.id)}</span><span>${i.updating ? 'Update to a part in the store' : 'New part'}</span><span>Can use: ${esc((i.manifest.permissions || []).join(', ') || 'none')}</span><span class="pill ${i.state}">${STATE[i.state]}</span></div>
+  <div class="grid">
+    <div>
+      ${channelBox('Who sent it', i.person)}
+      <div class="box"><h2>1. Automatic checks</h2>${checks}${warns}</div>
+      <div class="box"><h2>2. Review points</h2>
+        <label class="ck"><input type="checkbox" class="pt"> <span><b>It does what its name and description say</b>, and nothing else.</span></label>
+        <label class="ck"><input type="checkbox" class="pt"> <span><b>It works</b> in the preview: the main button does its job, and nothing is broken.</span></label>
+        <label class="ck"><input type="checkbox" class="pt"> <span><b>Nothing harmful or misleading</b>: no hate, no sexual content, no fake login screens, no personal information.</span></label>
+        <label class="ck"><input type="checkbox" class="pt"> <span><b>It's the creator's own work</b>: no one else's name, logo or copied tool.</span></label>
+      </div>
+      <div class="box"><h2>3. Decide</h2>
+        <label class="flabel" for="note">Note to ${esc(i.author || 'the creator')}</label>
+        <textarea id="note" placeholder="Say what to change, kindly and briefly. Needed for everything except approving."></textarea>
+        <div class="seen"><small>How ${esc(i.author || 'they')} will see it in Hashikko:</small>
+          <div class="appcard"><b>${esc(i.manifest.emoji || '🧩')} ${esc(nameOf(i))}</b><span class="pill" id="seenPill">…</span>
+          <div class="appnote"><small>Note from the reviewer</small><span id="seenText">(your note)</span></div></div></div>
+        ${ruleBox('Which rule does it break?')}
+        <div class="actions">
+          <button class="btn go" id="approve" ${!open || !i.ok ? 'disabled' : ''}>Approve and publish</button>
+          <button class="btn amber" id="changes" ${!open ? 'disabled' : ''}>Ask for changes</button>
+          <button class="btn" id="decline" ${!open ? 'disabled' : ''}>Decline (doesn't fit)</button>
+          <button class="btn red" id="violation" ${!open ? 'disabled' : ''}>Breaks the rules…</button>
+        </div>
+        <p class="small muted">"Decline" is for parts that just aren't a good fit. "Breaks the rules" also gives the channel a warning or a strike.</p>
+        <p class="msg" id="msg"></p>
+      </div>
+      ${history(i)}
+      <details class="box"><summary><b>See the code</b></summary><pre><code>${esc(i.html)}</code></pre></details>
+    </div>
+    <div><div class="frame"><iframe sandbox="allow-scripts" title="Preview"></iframe></div><p class="cap">The real part, running in a locked box. Nothing is saved.</p></div>
+  </div>`;
+  document.querySelector('.frame iframe').srcdoc = previewDoc(i.html);
+  const pts = [...document.querySelectorAll('.pt')];
+  const update = () => { $('approve').disabled = !open || !i.ok || !pts.every((p) => p.checked); };
+  pts.forEach((p) => p.addEventListener('change', update));
+  update();
+  const seen = (st) => { $('seenPill').className = 'pill ' + st; $('seenPill').textContent = STATE[st]; };
+  seen(i.state === 'reviewing' ? 'needs-changes' : i.state);
+  $('note').addEventListener('input', () => { $('seenText').textContent = $('note').value.trim() || '(your note)'; });
+  [['approve', 'listed'], ['changes', 'needs-changes'], ['decline', 'declined'], ['violation', 'declined']].forEach(([b, st]) => $(b).addEventListener('mouseenter', () => seen(st)));
+  wireRule(i.person);
+  $('approve').addEventListener('click', () => act({ number: i.number, action: 'approve' }));
+  $('changes').addEventListener('click', () => act({ number: i.number, action: 'changes' }));
+  $('decline').addEventListener('click', () => act({ number: i.number, action: 'decline' }));
+  $('violation').addEventListener('click', () => {
+    if (!$('rulebox').classList.contains('on')) { $('rulebox').classList.add('on'); $('violation').textContent = 'Confirm: breaks the rules'; return; }
+    const o = $('rule').selectedOptions[0];
+    act({ number: i.number, action: 'violation', rule: $('rule').value, severe: o && o.dataset.severe === 'true' });
+  });
+}
+
+function showReport(i) {
+  const open = i.state === 'open';
+  const reps = Object.entries(i.reporters || {});
+  $('main').innerHTML = `
+  <div class="head"><span class="emoji">🚩</span><div><h1>Report: ${esc(i.id)}</h1><p>${esc(i.reason)}</p></div></div>
+  <div class="meta"><span>#${i.number}</span><span>${reps.length} ${reps.length === 1 ? 'person' : 'people'} reported it</span><span>${i.uses} uses</span>
+    ${i.paused ? '<span class="pill paused">Paused: hidden from the store</span>' : ''}${i.autoPaused ? '<span class="pill paused">Paused automatically</span>' : ''}
+    <span class="pill ${i.state}">${STATE[i.state]}</span><a href="http://127.0.0.1:4322/web/parts/${esc(i.id)}.html" target="_blank">Open the part's page ↗</a></div>
+  <div class="box"><h2>What they wrote</h2>${i.details && i.details !== '_No response_' ? `<div class="quote">“${esc(i.details)}”</div>` : '<p class="muted">No details given.</p>'}
+    ${reps.length > 1 ? `<p class="small muted">All reasons: ${reps.map(([, r]) => esc(r)).join(' · ')}</p>` : ''}</div>
+  <div class="two">
+    <div class="box"><h2>Who reported it</h2>
+      ${i.reporterInfo.channel ? `<div class="who"><span class="av">${esc((i.reporterInfo.channel.name || '?')[0]).toUpperCase()}</span><div><b>${esc(i.reporterInfo.channel.name)}</b><small>@${esc(i.reporterInfo.channel.handle)}</small></div></div>`
+        : `<p class="muted small">A signed-in person without a channel</p>`}
+      <p class="small">Hashikko ID ${esc(i.reporter)} · reports sent: <b>${i.reporterInfo.reportsSent}</b> · led to a takedown: ${i.reporterInfo.reportsActedOn}</p>
+      ${i.reporterInfo.reportsSent >= 3 && !i.reporterInfo.reportsActedOn ? '<p class="warn small">Many reports, none acted on. Their reports may not be reliable.</p>' : ''}</div>
+    ${channelBox('Who made the part', i.maker)}
+  </div>
+  <div class="box"><h2>Decide</h2>
+    <div class="actions" style="margin-top:0">
+      ${i.paused ? '<button class="btn" id="unpause">Put it back in the store</button>' : '<button class="btn amber" id="pause">Pause while I look</button>'}
+    </div>
+    <p class="small muted">Pausing hides the part from the store so no one new adds it. People who already have it keep it.</p>
+    <label class="flabel" for="note">Reason (shown to everyone who added it, when you take it down)</label>
+    <textarea id="note" placeholder="E.g. It pretended to be a bank login. Hashikko turned it off to keep you safe."></textarea>
+    ${ruleBox('Does the creator break a rule? (optional: gives a warning or a strike)')}
+    <div class="actions">
+      <button class="btn red" id="take" ${!open ? 'disabled' : ''}>Take down</button>
+      <button class="btn" id="dismiss" ${!open ? 'disabled' : ''}>No action needed</button>
+    </div>
+    <p class="msg" id="msg"></p>
+    <p class="cap" style="text-align:left">Taking down removes the part from the store, and Hashikko turns it off on every computer that added it.</p>
+  </div>${history(i)}`;
+  $('rulebox').classList.add('on');
+  wireRule(i.maker);
+  if ($('pause')) $('pause').addEventListener('click', () => act({ number: i.number, action: 'pause' }));
+  if ($('unpause')) $('unpause').addEventListener('click', () => act({ number: i.number, action: 'unpause' }));
+  $('take').addEventListener('click', () => { const o = $('rule').selectedOptions[0]; act({ number: i.number, action: 'takedown', rule: $('rule').value, severe: o && o.dataset.severe === 'true' }); });
+  $('dismiss').addEventListener('click', () => act({ number: i.number, action: 'dismiss' }));
+}
+
+function showAppeal(a) {
+  if (!a) return;
+  const ch = data.channels.find((c) => c.id === a.channel);
+  const [kind] = String(a.ref).split(':');
+  const what = { warning: 'a warning', strike: 'a strike', removed: 'their channel being removed', decision: 'a decision on a part' }[kind] || a.ref;
+  $('main').innerHTML = `
+  <div class="head"><span class="emoji">⚖️</span><div><h1>Appeal from ${esc(a.channelName || 'a creator')}</h1><p>About ${esc(what)} · sent ${esc(fmtTime(a.at))}</p></div></div>
+  <div class="meta"><span class="pill ${a.state}">${esc(STATE[a.state] || a.state)}</span></div>
+  <div class="box"><h2>What they wrote</h2><div class="quote">“${esc(a.text)}”</div></div>
+  ${ch ? `<div class="box"><h2>Their channel</h2><b>${esc(ch.name)}</b> <span class="muted">@${esc(ch.handle)}</span>${ladder(ch.standing)}</div>` : ''}
+  <div class="box"><h2>Answer</h2>
+    <p class="small muted">Look at it again with fresh eyes. If the decision was wrong, reverse it: the warning or strike is removed (or the channel comes back). If it stays, say which rule it breaks.</p>
+    <textarea id="note" placeholder="Your answer. The creator sees it in Hashikko."></textarea>
+    <div class="actions">
+      <button class="btn go" id="rev" ${a.state !== 'open' ? 'disabled' : ''}>Reverse the decision</button>
+      <button class="btn" id="up" ${a.state !== 'open' ? 'disabled' : ''}>Keep the decision</button>
+    </div>
+    <p class="msg" id="msg"></p>
+    ${a.answer ? `<div class="quote">Answered: “${esc(a.answer)}”</div>` : ''}
+  </div>`;
+  $('rev').addEventListener('click', () => act({ action: 'answer-appeal', id: a.id, decision: 'reverse' }));
+  $('up').addEventListener('click', () => act({ action: 'answer-appeal', id: a.id, decision: 'uphold' }));
+}
+
+function showChannel(c) {
+  if (!c) return;
+  const subs = data.items.filter((i) => i.kind === 'submission' && i.channel && i.channel.id === c.id);
+  $('main').innerHTML = `
+  <div class="head"><span class="av" style="width:56px;height:56px;font-size:24px">${esc((c.name || '?')[0]).toUpperCase()}</span><div><h1>${esc(c.name)}</h1><p>@${esc(c.handle)} · since ${esc(fmtDay(c.created))} · ${c.followers || 0} followers</p></div></div>
+  <div class="box"><h2>Record</h2>${ladder(c.standing) || '<p class="muted">No warnings or strikes.</p>'}</div>
+  <div class="box"><h2>What they sent</h2>${subs.length ? `<ul class="checks">${subs.map((s) => `<li>#${s.number} ${esc(nameOf(s))} <span class="pill ${s.state}">${STATE[s.state]}</span></li>`).join('')}</ul>` : '<p class="muted">Nothing yet.</p>'}</div>`;
+}
+
+async function act(body) {
+  if (body.action !== 'approve' && body.action !== 'pause' && body.action !== 'unpause' && $('note')) body.note = $('note').value;
+  if (body.action === 'approve' && $('note')) body.note = $('note').value;
+  const r = await (await fetch('/desk/act', { method: 'POST', body: JSON.stringify(body) })).json();
+  $('msg').className = 'msg ' + (r.ok ? 'ok' : 'err');
+  $('msg').textContent = r.ok ? 'Done. The creator will see it in Hashikko.' + (r.result ? ` (${r.result})` : '') : r.reason;
+  if (r.ok) { lastKey = ''; await load(); }
+}
+for (const t of ['submission', 'report', 'appeal', 'channel']) $('t-' + t).addEventListener('click', () => {
+  tab = t; document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('on', b.id === 't-' + t)); renderList();
+});
+load();
+setInterval(load, 4000);
+</script>
+</body>
+</html>

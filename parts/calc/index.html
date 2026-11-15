@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://app.hashikko/base.css">
+<script src="https://app.hashikko/sdk.js"></script>
+<script type="application/json" id="hashikko-manifest">
+{"id":"calc","name":"Calculator","description":"Quick math, then copy the answer","emoji":"🧮","version":"1.0.0","keyboard":true,"permissions":["clipboard.write"]}
+</script>
+<style>
+.wrap { height: 100%; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.screen { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; text-align: right; min-height: 92px; }
+.expr { color: var(--muted); min-height: 18px; font-size: 13px; word-break: break-all; user-select: text; }
+.out { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; word-break: break-all; user-select: text; line-height: 1.2; margin-top: 4px; }
+.keys { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.keys button { border-radius: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 18px; font-weight: 600; min-height: 44px; }
+.keys button:hover { background: var(--hover); }
+.keys button:active { transform: scale(.96); }
+.keys .op { color: var(--accent); }
+.keys .eq { background: var(--accent); color: #fff; border: 0; }
+@media (prefers-color-scheme: dark) { .keys .eq { color: #06302b; } }
+.keys .fn { color: var(--muted); font-size: 14px; }
+.copy { padding: 9px; border-radius: 10px; color: var(--muted); }
+.copy:hover { background: var(--hover); color: var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="screen"><div class="expr" id="expr"></div><div class="out" id="out">0</div></div>
+  <div class="keys" id="keys"></div>
+  <button class="copy" id="copy">Copy answer</button>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const KEYS = ['C', '⌫', '%', '÷', '7', '8', '9', '×', '4', '5', '6', '−', '1', '2', '3', '＋', '0', '00', '.', '＝'];
+const OPS = { '÷': '/', '×': '*', '−': '-', '＋': '+' };
+let expr = '', answer = '0', justDone = false;
+
+// 文字を1つずつ読んで計算する（eval は使わない）
+function calc(src) {
+  const t = src.match(/\d+\.?\d*|\.\d+|[-+*/%]/g);
+  if (!t || t.join('') !== src) return null;
+  const nums = [], ops = [];
+  let expectNum = true;
+  for (let i = 0; i < t.length; i++) {
+    const x = t[i];
+    if (expectNum) {
+      if (x === '-' && /[\d.]/.test(t[i + 1] || '')) { nums.push(-parseFloat(t[++i])); expectNum = false; continue; }
+      if (!/[\d.]/.test(x)) return null;
+      nums.push(parseFloat(x)); expectNum = false;
+    } else if (x === '%') { nums[nums.length - 1] /= 100; }
+    else { if (/[\d.]/.test(x)) return null; ops.push(x); expectNum = true; }
+  }
+  if (expectNum) return null;
+  for (let i = 0; i < ops.length;) {
+    if (ops[i] === '*' || ops[i] === '/') { nums.splice(i, 2, ops[i] === '*' ? nums[i] * nums[i + 1] : nums[i] / nums[i + 1]); ops.splice(i, 1); }
+    else i++;
+  }
+  let r = nums[0];
+  ops.forEach((o, i) => { r = o === '+' ? r + nums[i + 1] : r - nums[i + 1]; });
+  return isFinite(r) ? r : null;
+}
+const fmt = (n) => { const r = Math.round(n * 1e10) / 1e10; return r.toLocaleString('en-US', { maximumFractionDigits: 10 }); };
+const pretty = (s) => s.replace(/\//g, '÷').replace(/\*/g, '×').replace(/-/g, '−').replace(/\+/g, '＋');
+
+function show() {
+  $('expr').textContent = pretty(expr);
+  const r = calc(expr);
+  if (expr === '') $('out').textContent = justDone ? answer : '0';
+  else if (r !== null) { answer = fmt(r); $('out').textContent = answer; }
+}
+function press(k) {
+  if (k === 'C') { expr = ''; answer = '0'; justDone = false; }
+  else if (k === '⌫') expr = expr.slice(0, -1);
+  else if (k === '＝') { const r = calc(expr); if (r !== null) { answer = fmt(r); expr = ''; justDone = true; } }
+  else {
+    const c = OPS[k] || k;
+    if (justDone && /[-+*/]/.test(c)) expr = answer.replace(/,/g, '') + c;
+    else if (/[-+*/]/.test(c) && /[-+*/]$/.test(expr)) expr = expr.slice(0, -1) + c;
+    else expr += c;
+    justDone = false;
+  }
+  show();
+}
+KEYS.forEach((k) => {
+  const b = document.createElement('button');
+  b.textContent = k;
+  b.className = k === '＝' ? 'eq' : OPS[k] ? 'op' : /[C⌫%]/.test(k) ? 'fn' : '';
+  b.addEventListener('click', () => press(k));
+  $('keys').append(b);
+});
+document.addEventListener('keydown', (e) => {
+  const map = { '/': '÷', '*': '×', '-': '−', '+': '＋', 'Enter': '＝', '=': '＝', 'Backspace': '⌫', 'Delete': 'C' };
+  const k = map[e.key] || (/^[\d.%]$/.test(e.key) ? e.key : null);
+  if (k) { e.preventDefault(); press(k); }
+});
+$('copy').addEventListener('click', async () => {
+  const r = await hashikko.call('clipboard.write', { text: $('out').textContent.replace(/,/g, '') });
+  $('copy').textContent = r && r.ok ? 'Copied' : "Couldn't copy";
+  setTimeout(() => { $('copy').textContent = 'Copy answer'; }, 1500);
+});
+$('keys').addEventListener('pointerdown', () => hashikko.focus());
+hashikko.onVisible(() => {});
+show();
+</script>
+</body>
+</html>

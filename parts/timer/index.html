@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://app.hashikko/base.css">
+<script src="https://app.hashikko/sdk.js"></script>
+<script type="application/json" id="hashikko-manifest">
+{"id":"timer","name":"Timer","description":"Alternate focus and break time","emoji":"⏱","version":"1.0.0","keyboard":false,"permissions":["storage"]}
+</script>
+<style>
+.wrap { height: 100%; padding: 16px; display: flex; flex-direction: column; align-items: center; transition: background .4s; }
+.wrap.done { background: var(--accent-soft); }
+.mode { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--track); }
+.mode button { padding: 6px 16px; border-radius: 8px; color: var(--muted); }
+.mode button.on { background: var(--surface); color: var(--text); font-weight: 600; }
+.time { font-size: 64px; font-weight: 700; margin: 34px 0 6px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.label { color: var(--muted); min-height: 20px; }
+.bar { width: 100%; height: 6px; border-radius: 3px; background: var(--track); margin: 22px 0; overflow: hidden; }
+.fill { height: 100%; width: 0; background: var(--accent); border-radius: 3px; }
+.go { width: 100%; padding: 16px; border-radius: 14px; background: var(--accent); color: #fff; font-size: 17px; font-weight: 700; }
+@media (prefers-color-scheme: dark) { .go { color: #06302b; } }
+.go.running { background: var(--surface); color: var(--text); border: 1px solid var(--line); }
+.reset { margin-top: 8px; color: var(--muted); padding: 8px 14px; border-radius: 8px; }
+.reset:hover { background: var(--hover); }
+.mins { margin-top: auto; display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 12px; }
+.mins button { width: 28px; height: 28px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); }
+.mins b { color: var(--text); min-width: 46px; text-align: center; font-variant-numeric: tabular-nums; }
+.count { margin-top: 10px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <div class="mode"><button id="mFocus" class="on">Focus</button><button id="mBreak">Break</button></div>
+  <div class="time" id="time">25:00</div>
+  <div class="label" id="label"></div>
+  <div class="bar"><div class="fill" id="fill"></div></div>
+  <button class="go" id="go">Start</button>
+  <button class="reset" id="reset">Reset</button>
+  <div class="mins"><span id="minsName">Focus length</span><button id="minus">−</button><b id="mins">25 min</b><button id="plus">＋</button></div>
+  <div class="count" id="count"></div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+let cfg = { focus: 25, rest: 5 };
+let stats = { day: '', done: 0 };
+let mode = 'focus', endAt = 0, left = 25 * 60, tick = null;
+const total = () => (mode === 'focus' ? cfg.focus : cfg.rest) * 60;
+const today = () => new Date().toDateString();
+
+function show() {
+  const m = Math.floor(left / 60), s = String(left % 60).padStart(2, '0');
+  $('time').textContent = m + ':' + s;
+  $('fill').style.width = (100 - (left / total()) * 100) + '%';
+  $('mFocus').className = mode === 'focus' ? 'on' : '';
+  $('mBreak').className = mode === 'rest' ? 'on' : '';
+  $('go').textContent = tick ? 'Pause' : (left < total() && left > 0 ? 'Resume' : 'Start');
+  $('go').className = 'go' + (tick ? ' running' : '');
+  $('minsName').textContent = mode === 'focus' ? 'Focus length' : 'Break length';
+  $('mins').textContent = (mode === 'focus' ? cfg.focus : cfg.rest) + ' min';
+  $('count').textContent = stats.day === today() && stats.done ? 'Focus sessions today: ' + stats.done : '';
+}
+function stop() { clearInterval(tick); tick = null; }
+function setMode(m) { stop(); mode = m; left = total(); $('label').textContent = ''; $('wrap').classList.remove('done'); show(); }
+function finish() {
+  stop(); left = 0;
+  $('wrap').classList.add('done');
+  if (mode === 'focus') {
+    if (stats.day !== today()) stats = { day: today(), done: 0 };
+    stats.done++;
+    hashikko.call('storage.set', { key: 'stats', value: stats });
+    $('label').textContent = 'Nice work. Time for a break.';
+  } else $('label').textContent = 'Break is over.';
+  show();
+}
+$('go').addEventListener('click', () => {
+  if (tick) { stop(); show(); return; }
+  if (left <= 0) left = total();
+  $('wrap').classList.remove('done'); $('label').textContent = '';
+  endAt = Date.now() + left * 1000;
+  tick = setInterval(() => { left = Math.max(0, Math.round((endAt - Date.now()) / 1000)); if (left <= 0) finish(); else show(); }, 250);
+  show();
+});
+$('reset').addEventListener('click', () => setMode(mode));
+$('mFocus').addEventListener('click', () => setMode('focus'));
+$('mBreak').addEventListener('click', () => setMode('rest'));
+function change(d) {
+  const k = mode === 'focus' ? 'focus' : 'rest';
+  cfg[k] = Math.min(90, Math.max(1, cfg[k] + d));
+  hashikko.call('storage.set', { key: 'config', value: cfg });
+  if (!tick) left = total();
+  show();
+}
+$('minus').addEventListener('click', () => change(mode === 'focus' ? -5 : -1));
+$('plus').addEventListener('click', () => change(mode === 'focus' ? 5 : 1));
+Promise.all([hashikko.call('storage.get', { key: 'config' }), hashikko.call('storage.get', { key: 'stats' })]).then(([c, s]) => {
+  if (c && c.value) cfg = Object.assign(cfg, c.value);
+  if (s && s.value) stats = s.value;
+  left = total(); show();
+});
+hashikko.onVisible(() => show());
+</script>
+</body>
+</html>

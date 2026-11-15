@@ -1,0 +1,42 @@
+/* 本体とすべての部品で共通の色と基本の形 */
+:root {
+  --bg: #f4f4f6;
+  --surface: #ffffff;
+  --text: #16161a;
+  --muted: #5d5d67;
+  --line: rgba(0, 0, 0, .08);
+  --hover: rgba(0, 0, 0, .05);
+  --accent: #0f9f8f;
+  --accent-soft: rgba(15, 159, 143, .12);
+  --track: rgba(0, 0, 0, .10);
+  --warn: #d97706;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b1f;
+    --surface: #26262c;
+    --text: #f2f2f5;
+    --muted: #a8a8b3;
+    --line: rgba(255, 255, 255, .08);
+    --hover: rgba(255, 255, 255, .06);
+    --accent: #2dd4bf;
+    --accent-soft: rgba(45, 212, 191, .14);
+    --track: rgba(255, 255, 255, .14);
+    --warn: #fbbf24;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--text);
+  font: 13px/1.4 "Segoe UI", -apple-system, system-ui, "Yu Gothic UI", "Hiragino Sans", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+button:focus { outline: none; }
+button:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 1px; }
+[hidden] { display: none !important; }

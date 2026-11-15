@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://app.hashikko/base.css">
+<script src="https://app.hashikko/sdk.js"></script>
+<script type="application/json" id="hashikko-manifest">
+{"id":"todo","name":"To-do","description":"Write it down, check it off","emoji":"✅","version":"1.0.0","keyboard":true,"permissions":["storage"]}
+</script>
+<style>
+.wrap { height: 100%; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.add { display: flex; gap: 6px; }
+.add input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); outline: 0; background: var(--surface); color: var(--text); font: inherit; user-select: text; }
+.add input:focus { border-color: var(--accent); }
+.add button { padding: 0 14px; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 700; }
+@media (prefers-color-scheme: dark) { .add button { color: #06302b; } }
+.list { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0; scrollbar-width: thin; }
+.item { display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 10px; }
+.item:hover { background: var(--hover); }
+.item input { accent-color: var(--accent); width: 17px; height: 17px; margin: 0; flex: none; }
+.item span { flex: 1; min-width: 0; word-break: break-word; }
+.item.done span { color: var(--muted); text-decoration: line-through; }
+.item .x { color: var(--muted); width: 24px; height: 24px; border-radius: 6px; visibility: hidden; }
+.item:hover .x { visibility: visible; }
+.item .x:hover { background: var(--hover); color: var(--text); }
+.empty { color: var(--muted); text-align: center; margin-top: 40px; line-height: 1.7; }
+.foot { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12px; }
+.foot button { padding: 6px 10px; border-radius: 8px; }
+.foot button:hover { background: var(--hover); color: var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="add"><input id="in" type="text" placeholder="Add a task and press Enter" spellcheck="false"><button id="add">Add</button></div>
+  <ul class="list" id="list"></ul>
+  <div class="foot"><span id="left"></span><button id="clear">Clear done</button></div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+let items = [];
+const save = () => hashikko.call('storage.set', { key: 'items', value: items });
+
+function render() {
+  const frag = document.createDocumentFragment();
+  items.forEach((it) => {
+    const li = document.createElement('li');
+    li.className = 'item' + (it.done ? ' done' : '');
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = it.done;
+    cb.addEventListener('change', () => { it.done = cb.checked; save(); render(); });
+    const s = document.createElement('span'); s.textContent = it.text;
+    s.addEventListener('click', () => { it.done = !it.done; save(); render(); });
+    const x = document.createElement('button'); x.className = 'x'; x.textContent = '✕'; x.title = 'Remove';
+    x.addEventListener('click', () => { items = items.filter((i) => i !== it); save(); render(); });
+    li.append(cb, s, x);
+    frag.append(li);
+  });
+  if (!items.length) {
+    const p = document.createElement('li'); p.className = 'empty';
+    p.textContent = 'Tasks you add will show up here.';
+    frag.append(p);
+  }
+  $('list').replaceChildren(frag);
+  const n = items.filter((i) => !i.done).length;
+  $('left').textContent = items.length ? n + ' left' : '';
+  $('clear').hidden = !items.some((i) => i.done);
+}
+function add() {
+  const t = $('in').value.trim();
+  if (!t) return;
+  items.unshift({ text: t, done: false });
+  $('in').value = '';
+  save(); render();
+}
+$('add').addEventListener('click', add);
+$('in').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) add(); });
+$('clear').addEventListener('click', () => { items = items.filter((i) => !i.done); save(); render(); });
+hashikko.call('storage.get', { key: 'items' }).then((r) => { if (r && Array.isArray(r.value)) items = r.value; render(); });
+hashikko.onVisible((v) => { if (v) { $('in').focus(); hashikko.focus(); } });
+render();
+</script>
+</body>
+</html>

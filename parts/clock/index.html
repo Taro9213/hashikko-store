@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://app.hashikko/base.css">
+<script src="https://app.hashikko/sdk.js"></script>
+<script type="application/json" id="hashikko-manifest">
+{"id":"clock","name":"World clock","description":"See the time in other cities","emoji":"🌍","version":"1.0.0","keyboard":false,"permissions":["storage"]}
+</script>
+<style>
+.wrap { height: 100%; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.list { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; scrollbar-width: thin; }
+.city { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.city.here { background: var(--accent-soft); border-color: transparent; }
+.ctext { flex: 1; min-width: 0; }
+.ctext b { display: block; }
+.ctext small { color: var(--muted); font-size: 11.5px; }
+.t { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.x { color: var(--muted); width: 24px; height: 24px; border-radius: 6px; }
+.x:hover { background: var(--hover); color: var(--text); }
+.adds { display: flex; flex-wrap: wrap; gap: 6px; }
+.adds button { padding: 5px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.adds button:hover { color: var(--text); background: var(--hover); }
+.cap { color: var(--muted); font-size: 11.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <ul class="list" id="list"></ul>
+  <div class="cap" id="cap">Add a city</div>
+  <div class="adds" id="adds"></div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const ALL = {
+  'Asia/Tokyo': 'Tokyo', 'America/New_York': 'New York', 'America/Los_Angeles': 'Los Angeles', 'America/Chicago': 'Chicago',
+  'Europe/London': 'London', 'Europe/Paris': 'Paris', 'Europe/Berlin': 'Berlin', 'Asia/Shanghai': 'Shanghai', 'Asia/Seoul': 'Seoul',
+  'Asia/Singapore': 'Singapore', 'Asia/Kolkata': 'Delhi', 'Asia/Dubai': 'Dubai', 'Australia/Sydney': 'Sydney',
+  'Pacific/Honolulu': 'Honolulu', 'America/Sao_Paulo': 'São Paulo',
+};
+const HERE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+let zones = ['America/Los_Angeles', 'Europe/London', 'Asia/Tokyo'];
+const save = () => hashikko.call('storage.set', { key: 'zones', value: zones });
+const fmt = (tz, opt) => new Intl.DateTimeFormat('en-US', Object.assign({ timeZone: tz }, opt)).format(new Date());
+// その町と、ここの時刻の差（時間）
+function diff(tz) {
+  const at = (z) => new Date(new Date().toLocaleString('en-US', { timeZone: z })).getTime();
+  const h = Math.round((at(tz) - at(HERE)) / 360000) / 10;
+  return h === 0 ? 'same as here' : (h > 0 ? '+' : '−') + Math.abs(h) + 'h';
+}
+function render() {
+  const frag = document.createDocumentFragment();
+  const row = (tz, name, here) => {
+    const li = document.createElement('li'); li.className = 'city' + (here ? ' here' : '');
+    const c = document.createElement('div'); c.className = 'ctext';
+    const b = document.createElement('b'); b.textContent = name;
+    const s = document.createElement('small'); s.textContent = fmt(tz, { month: 'numeric', day: 'numeric', weekday: 'short' }) + (here ? '' : ' · ' + diff(tz));
+    c.append(b, s);
+    const t = document.createElement('div'); t.className = 't'; t.textContent = fmt(tz, { hour: 'numeric', minute: '2-digit' });
+    li.append(c, t);
+    if (!here) {
+      const x = document.createElement('button'); x.className = 'x'; x.textContent = '✕'; x.title = 'Remove';
+      x.addEventListener('click', () => { zones = zones.filter((z) => z !== tz); save(); render(); });
+      li.append(x);
+    }
+    frag.append(li);
+  };
+  row(HERE, 'Here', true);
+  zones.filter((z) => z !== HERE && ALL[z]).forEach((z) => row(z, ALL[z], false));
+  $('list').replaceChildren(frag);
+  const rest = Object.keys(ALL).filter((z) => !zones.includes(z) && z !== HERE);
+  $('cap').hidden = !rest.length;
+  $('adds').replaceChildren(...rest.map((z) => {
+    const b = document.createElement('button'); b.textContent = '+ ' + ALL[z];
+    b.addEventListener('click', () => { zones.push(z); save(); render(); });
+    return b;
+  }));
+}
+let timer = null;
+hashikko.call('storage.get', { key: 'zones' }).then((r) => { if (r && Array.isArray(r.value)) zones = r.value; render(); });
+hashikko.onVisible((v) => { clearInterval(timer); if (v) { render(); timer = setInterval(render, 5000); } });
+render();
+</script>
+</body>
+</html>

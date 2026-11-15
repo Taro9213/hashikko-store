@@ -1,0 +1,132 @@
+{
+  "version": 1,
+  "parts": [
+    {
+      "id": "calc",
+      "name": "Calculator",
+      "description": "Quick math, then copy the answer",
+      "emoji": "🧮",
+      "version": "1.0.0",
+      "author": "Hashikko",
+      "creator": "hashikko",
+      "added": "",
+      "keywords": [
+        "calculate",
+        "math",
+        "tip",
+        "split",
+        "percent",
+        "add"
+      ],
+      "permissions": [
+        "clipboard.write"
+      ],
+      "keyboard": true,
+      "sha256": "2783891a7f664325b9084102d7bd4aabcec02e465c9d59685dc47a20368de0c9",
+      "size": 5092,
+      "updated": "2026-11-12"
+    },
+    {
+      "id": "clock",
+      "name": "World clock",
+      "description": "See the time in other cities",
+      "emoji": "🌍",
+      "version": "1.0.0",
+      "author": "Hashikko",
+      "creator": "hashikko",
+      "added": "",
+      "keywords": [
+        "time zone",
+        "clock",
+        "time difference",
+        "cities",
+        "abroad",
+        "london",
+        "tokyo",
+        "new york"
+      ],
+      "permissions": [
+        "storage"
+      ],
+      "keyboard": false,
+      "sha256": "8b0fe6437d0923249c295d99fe1227ac07b049c682529fb883af67f9fcca1012",
+      "size": 4584,
+      "updated": "2026-11-12"
+    },
+    {
+      "id": "count",
+      "name": "Word count",
+      "description": "Count words and characters in any text",
+      "emoji": "🔤",
+      "version": "1.0.0",
+      "author": "Hashikko",
+      "creator": "hashikko",
+      "added": "",
+      "keywords": [
+        "words",
+        "characters",
+        "count",
+        "essay",
+        "letter",
+        "length",
+        "reading time"
+      ],
+      "permissions": [],
+      "keyboard": true,
+      "sha256": "7a0f720274bcde5dd9b4fd5933c6ed22ed741340b51cce472b0eca38796c2527",
+      "size": 3006,
+      "updated": "2026-11-12"
+    },
+    {
+      "id": "timer",
+      "name": "Timer",
+      "description": "Alternate focus and break time",
+      "emoji": "⏱",
+      "version": "1.0.0",
+      "author": "Hashikko",
+      "creator": "hashikko",
+      "added": "",
+      "keywords": [
+        "pomodoro",
+        "focus",
+        "break",
+        "countdown",
+        "alarm",
+        "stopwatch",
+        "study"
+      ],
+      "permissions": [
+        "storage"
+      ],
+      "keyboard": false,
+      "sha256": "6c753f129ed7952828bd7214e6068ce3705673e1fc7783296d5eb7bd288afe1a",
+      "size": 5464,
+      "updated": "2026-11-12"
+    },
+    {
+      "id": "todo",
+      "name": "To-do",
+      "description": "Write it down, check it off",
+      "emoji": "✅",
+      "version": "1.0.0",
+      "author": "Hashikko",
+      "creator": "hashikko",
+      "added": "",
+      "keywords": [
+        "todo",
+        "task",
+        "list",
+        "checklist",
+        "tasks",
+        "plan"
+      ],
+      "permissions": [
+        "storage"
+      ],
+      "keyboard": true,
+      "sha256": "36d63990d830d17304fcecc2daabab3bb73092fb21ab5e53c344c164a922ad83",
+      "size": 4237,
+      "updated": "2026-11-12"
+    }
+  ]
+}

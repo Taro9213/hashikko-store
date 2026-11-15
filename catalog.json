@@ -127,6 +127,28 @@
       "sha256": "36d63990d830d17304fcecc2daabab3bb73092fb21ab5e53c344c164a922ad83",
       "size": 4237,
       "updated": "2026-11-12"
+    },
+    {
+      "id": "vocabulary-notes",
+      "name": "Vocabulary notes",
+      "description": "Save new words with their meanings and look them up fast",
+      "emoji": "📖",
+      "version": "1.0.0",
+      "author": "Taro",
+      "creator": "68f4968ea60a",
+      "handle": "tarotools",
+      "added": "2026-11-15",
+      "keywords": [],
+      "permissions": [
+        "storage",
+        "clipboard.write"
+      ],
+      "keyboard": true,
+      "sha256": "375e27dbdeab145ca667cdc25226aaa54bfb9e3c28df113c7f04338c6f2d59aa",
+      "size": 7345,
+      "updated": "2026-11-15",
+      "issue": 1,
+      "reviewed": "2026-11-15"
     }
   ]
 }

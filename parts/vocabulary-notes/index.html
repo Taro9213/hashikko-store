@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://app.hashikko/base.css">
+<script src="https://app.hashikko/sdk.js"></script>
+<script type="application/json" id="hashikko-manifest">
+{"id":"vocabulary-notes","name":"Vocabulary notes","description":"Save new words with their meanings and look them up fast","emoji":"📖","version":"1.0.0","keyboard":true,"permissions":["storage","clipboard.write"]}
+</script>
+<style>
+* { box-sizing: border-box; }
+.wrap { height: 100%; padding: 16px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--text); }
+input { width: 100%; min-height: 34px; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 13px; user-select: text; outline: none; }
+input:focus { border-color: var(--accent); }
+.add { width: 100%; min-height: 44px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; }
+.add:hover { opacity: .9; }
+.cancel { color: var(--muted); min-height: 34px; border-radius: 8px; }
+.cancel:hover { background: var(--hover); }
+.bar { display: flex; align-items: baseline; justify-content: space-between; margin-top: 6px; }
+.count { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.count small { font-size: 12px; font-weight: 400; color: var(--muted); margin-left: 4px; }
+.list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.w { font-size: 15px; font-weight: 700; user-select: text; word-break: break-word; }
+.m { margin-top: 2px; user-select: text; word-break: break-word; }
+.e { margin-top: 4px; color: var(--muted); font-style: italic; user-select: text; word-break: break-word; }
+.acts { display: flex; gap: 4px; margin-top: 8px; }
+.acts button { min-height: 30px; padding: 0 10px; border-radius: 8px; color: var(--muted); font-size: 12px; }
+.acts button:hover { background: var(--hover); color: var(--text); }
+.acts .danger.sure { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.empty { text-align: center; color: var(--muted); margin-top: 24px; line-height: 1.6; }
+.empty .big { font-size: 32px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <input id="word" placeholder="New word" maxlength="80" autocomplete="off">
+  <input id="meaning" placeholder="Meaning" maxlength="300" autocomplete="off">
+  <input id="example" placeholder="Example (optional)" maxlength="300" autocomplete="off">
+  <button class="add" id="add">Add word</button>
+  <button class="cancel" id="cancel" style="display:none">Cancel edit</button>
+  <div class="bar">
+    <div class="count"><span id="n">0</span><small>words</small></div>
+  </div>
+  <input id="search" placeholder="🔍 Search" autocomplete="off">
+  <div class="list" id="list"></div>
+</div>
+<script>
+let items = [];
+let editingId = null;
+const $ = (id) => document.getElementById(id);
+const wordEl = $('word'), meaningEl = $('meaning'), exampleEl = $('example'), searchEl = $('search');
+
+const save = () => hashikko.call('storage.set', { key: 'words', value: items });
+
+function clearForm() {
+  editingId = null;
+  wordEl.value = ''; meaningEl.value = ''; exampleEl.value = '';
+  $('add').textContent = 'Add word';
+  $('cancel').style.display = 'none';
+}
+
+function render() {
+  $('n').textContent = items.length;
+  const q = searchEl.value.trim().toLowerCase();
+  const shown = items.filter((it) =>
+    !q || it.word.toLowerCase().includes(q) || it.meaning.toLowerCase().includes(q));
+  const list = $('list');
+  list.textContent = '';
+  if (shown.length === 0) {
+    const d = document.createElement('div');
+    d.className = 'empty';
+    const big = document.createElement('div');
+    big.className = 'big';
+    big.textContent = '📖';
+    const t = document.createElement('div');
+    t.textContent = items.length === 0 ? 'No words yet. Add your first one above.' : 'Nothing found.';
+    d.appendChild(big); d.appendChild(t);
+    list.appendChild(d);
+    return;
+  }
+  shown.forEach((it) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const w = document.createElement('div'); w.className = 'w'; w.textContent = it.word;
+    const m = document.createElement('div'); m.className = 'm'; m.textContent = it.meaning;
+    card.appendChild(w); card.appendChild(m);
+    if (it.example) {
+      const e = document.createElement('div'); e.className = 'e'; e.textContent = '“' + it.example + '”';
+      card.appendChild(e);
+    }
+    const acts = document.createElement('div'); acts.className = 'acts';
+    const copy = document.createElement('button'); copy.textContent = 'Copy';
+    copy.addEventListener('click', () => {
+      hashikko.call('clipboard.write', { text: it.word + ' — ' + it.meaning });
+      copy.textContent = 'Copied ✓';
+      setTimeout(() => { copy.textContent = 'Copy'; }, 1500);
+    });
+    const edit = document.createElement('button'); edit.textContent = 'Edit';
+    edit.addEventListener('click', () => {
+      editingId = it.id;
+      wordEl.value = it.word; meaningEl.value = it.meaning; exampleEl.value = it.example || '';
+      $('add').textContent = 'Save changes';
+      $('cancel').style.display = '';
+      wordEl.focus();
+    });
+    const del = document.createElement('button'); del.className = 'danger'; del.textContent = 'Delete';
+    let timer = null;
+    del.addEventListener('click', () => {
+      if (!del.classList.contains('sure')) {
+        del.classList.add('sure'); del.textContent = 'Sure?';
+        timer = setTimeout(() => { del.classList.remove('sure'); del.textContent = 'Delete'; }, 2500);
+        return;
+      }
+      clearTimeout(timer);
+      items = items.filter((x) => x.id !== it.id);
+      if (editingId === it.id) clearForm();
+      save(); render();
+    });
+    acts.appendChild(copy); acts.appendChild(edit); acts.appendChild(del);
+    card.appendChild(acts);
+    list.appendChild(card);
+  });
+}
+
+function submit() {
+  const word = wordEl.value.trim();
+  const meaning = meaningEl.value.trim();
+  const example = exampleEl.value.trim();
+  if (!word) { wordEl.focus(); return; }
+  if (!meaning) { meaningEl.focus(); return; }
+  if (editingId) {
+    const it = items.find((x) => x.id === editingId);
+    if (it) { it.word = word; it.meaning = meaning; it.example = example; }
+  } else {
+    items.unshift({ id: Date.now() + '-' + Math.random().toString(36).slice(2, 6), word, meaning, example });
+  }
+  clearForm();
+  save(); render();
+  wordEl.focus();
+}
+
+$('add').addEventListener('click', submit);
+$('cancel').addEventListener('click', () => { clearForm(); wordEl.focus(); });
+[wordEl, meaningEl, exampleEl].forEach((el) =>
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); }));
+searchEl.addEventListener('input', render);
+
+hashikko.call('storage.get', { key: 'words' }).then((r) => {
+  if (r && Array.isArray(r.value)) items = r.value;
+  render();
+}).catch(render);
+
+hashikko.onVisible((visible) => {
+  if (visible) wordEl.focus();
+});
+render();
+</script>
+</body>
+</html>

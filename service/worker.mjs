@@ -317,16 +317,18 @@ async function report(req, env) {
   let paused = false;
   if (serious >= AUTO_PAUSE_REPORTERS) paused = await bumpStats(env, (s) => { if (!s.paused.includes(id)) s.paused.push(id); return true; });
   if (first) {
-    await github(env, '/issues', {
+    // The issue is public (the store repository is public), so it never says who reported.
+    // Who reported is kept here in KV, and only reviewers can read it (admin action "report-meta").
+    const issue = await github(env, '/issues', {
       method: 'POST',
       body: JSON.stringify({
         title: `Report: ${id}`, labels: ['report'],
         body: ['_Sent from the Hashikko app._', '', '### Part id', '', id, '', '### What is wrong?', '', b.reason, '',
-          '### Details', '', details || '_No response_', '', '### Reported by (Hashikko ID)', '', m.reporter,
-          ...(m.ch ? ['', '### Reporter\'s channel', '', `${m.ch.name} (@${m.ch.handle}) · ${m.ch.id}`] : []),
+          '### Details', '', details || '_No response_',
           ...(paused ? ['', '### Paused', '', `${AUTO_PAUSE_REPORTERS} people reported it as serious, so it was hidden from the store until a reviewer decides.`] : [])].join('\n'),
       }),
     });
+    await st.put('repmeta:' + issue.number, { reporter: m.reporter, channel: m.ch ? { name: m.ch.name, handle: m.ch.handle, id: m.ch.id } : null });
   }
   return json({ ok: true });
 }
@@ -452,6 +454,7 @@ export async function admin(env, b) {
     }
     case 'pause': return { ok: true, paused: await bumpStats(env, (s) => { if (!s.paused.includes(b.id)) s.paused.push(b.id); return s.paused; }) };
     case 'unpause': return { ok: true, paused: await bumpStats(env, (s) => { s.paused = s.paused.filter((x) => x !== b.id); return s.paused; }) };
+    case 'report-meta': return { ok: true, meta: (await st.get('repmeta:' + Number(b.number))) || null };
     case 'reports': return { ok: true, reporters: ((await st.get('rep:' + b.id)) || { reporters: {} }).reporters };
     default: return { ok: false, reason: 'unknown' };
   }

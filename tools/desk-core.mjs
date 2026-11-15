@@ -126,6 +126,12 @@ export function createDesk({ store, gh, admin, stats, publish }) {
     const all = await gh.list();
     const list = all.map((i) => (isReport(i) ? readReport(i) : readSubmission(i))).sort((a, b) => b.number - a.number);
     const st = await stats();
+    // Who reported is not in the public issue; the service keeps it for reviewers
+    for (const it of list) {
+      if (it.kind !== 'report' || it.reporter) continue;
+      const meta = (await admin({ action: 'report-meta', number: it.number })).meta;
+      if (meta) { it.reporter = meta.reporter; it.reporterChannel = meta.channel; }
+    }
     for (const it of list) {
       if (it.kind === 'submission') it.person = await personOf(it.channel && it.channel.id, list);
       else {

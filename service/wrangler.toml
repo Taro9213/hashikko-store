@@ -13,7 +13,7 @@ compatibility_date = "2026-10-01"
 [vars]
 STORE_REPO = "Taro9213/hashikko-store"
 PUBLIC_URL = "https://hashikko-store.hashikko.workers.dev/"
-GOOGLE_CLIENT_ID = "53244376557-9nvh970n9hs3vmjm11ooks6pvv9h43p1.apps.googleusercontent.com"
+GOOGLE_CLIENT_ID = "353244376557-9nvh970n9hs3vmjm11ooks6pvv9h43p1.apps.googleusercontent.com"
 
 [[kv_namespaces]]
 binding = "DB"

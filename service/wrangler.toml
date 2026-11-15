@@ -11,10 +11,10 @@ main = "worker.mjs"
 compatibility_date = "2026-10-01"
 
 [vars]
-STORE_REPO = "OWNER/hashikko-store"
-PUBLIC_URL = "https://hashikko-store.WORKERS_SUBDOMAIN.workers.dev/"
-GOOGLE_CLIENT_ID = "GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+STORE_REPO = "Taro9213/hashikko-store"
+PUBLIC_URL = "https://hashikko-store.hashikko.workers.dev/"
+GOOGLE_CLIENT_id = "8c1abc83f8a54d12af72f820dd73f096"
 
 [[kv_namespaces]]
 binding = "DB"
-id = "KV_NAMESPACE_ID"
+id = "8c1abc83f8a54d12af72f820dd73f096"

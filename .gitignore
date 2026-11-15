@@ -6,3 +6,6 @@ desk.secrets.json
 
 # Built by GitHub Actions (tools/build-web.mjs)
 web/
+
+# Wrangler cache
+service/.wrangler/

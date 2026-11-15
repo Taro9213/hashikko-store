@@ -77,13 +77,17 @@ function db(env) {
   };
 }
 
+// Rate limits are counted in this worker's memory, not in KV: the free KV plan allows only 1,000 writes a day,
+// and writing a counter on every request would use them up. Memory is per Cloudflare location and resets when the
+// worker restarts, so this is a brake on runaway clients, not an exact limit.
+const rates = new Map();
 async function limited(env, req, kind) {
   const [max, secs] = LIMITS[kind];
   const ip = req.headers.get('cf-connecting-ip') || 'local';
-  const key = `rate:${kind}:${await sha256(ip + (env.RATE_SALT || 'hashikko'))}:${Math.floor(Date.now() / 1000 / secs)}`;
-  const s = db(env);
-  const n = ((await s.get(key)) || 0) + 1;
-  await s.put(key, n, secs + 60);
+  const key = `${kind}:${await sha256(ip + (env.RATE_SALT || 'hashikko'))}:${Math.floor(Date.now() / 1000 / secs)}`;
+  const n = (rates.get(key) || 0) + 1;
+  rates.set(key, n);
+  if (rates.size > 5000) for (const k of [...rates.keys()].slice(0, 2500)) rates.delete(k);
   return n > max;
 }
 

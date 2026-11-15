@@ -89,10 +89,12 @@ export function checkPart(text) {
   if (/\\x[0-9a-f]{2}(\\x[0-9a-f]{2}){20,}/i.test(html) || /\\u[0-9a-f]{4}(\\u[0-9a-f]{4}){20,}/i.test(html)) warnings.push('Contains escaped text that may hide code. A reviewer will look at it closely.');
   // Things a computer can't judge, but a reviewer should look at closely
   const visible = html.replace(/<script[^>]*id\s*=\s*["']hashikko-manifest["'][^>]*>[\s\S]*?<\/script>/i, '');
+  // The browser's random-number helpers (crypto.getRandomValues, crypto.randomUUID) are normal in dice and games, not about money
+  const wordsToCheck = visible.replace(/\b(?:window\.|self\.|globalThis\.)?crypto\.(?:getRandomValues|randomUUID)\b/g, '');
   const domains = [...new Set([...visible.matchAll(/\b(?:www\.)?[a-z0-9-]{2,}\.(?:com|net|org|io|app|co|me|ly|xyz|info|biz|link|site|online|shop|top|ru|cn|jp)\b/gi)].map((m) => m[0].toLowerCase()))]
     .filter((d) => !/^app\.hashikko$/.test(d));
   if (domains.length) warnings.push(`Mentions website names (${domains.slice(0, 4).join(', ')}). Check it isn't sending people somewhere to be tricked.`);
-  if (/password|passcode|log ?in|sign ?in|credit card|card number|bank account|social security|wallet|seed phrase|private key|bitcoin|crypto|gift card|verify your account/i.test(visible))
+  if (/password|passcode|log ?in|sign ?in|credit card|card number|bank account|social security|wallet|seed phrase|private key|bitcoin|crypto|gift card|verify your account/i.test(wordsToCheck))
     warnings.push('Mentions passwords, logins, payments or crypto. Check it isn\'t pretending to be a login or payment screen.');
   if (manifest && Array.isArray(manifest.permissions) && manifest.permissions.includes('clipboard.write'))
     warnings.push('Copies text. Check what it copies: it must be exactly what the person sees, never commands or links.');

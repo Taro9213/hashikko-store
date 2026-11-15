@@ -67,7 +67,7 @@ if (-not $kv) {
   $kv = $m.Groups[1].Value
   $a.kvNamespaceId = $kv; WriteAddr $a
 }
-WriteText $toml ((Get-Content $toml -Raw -Encoding UTF8) -replace 'id = "[^"]*"', "id = `"$kv`"" -replace 'STORE_REPO = "[^"]*"', "STORE_REPO = `"$repo`"")
+WriteText $toml ((Get-Content $toml -Raw -Encoding UTF8) -creplace '(?m)^id = "[^"]*"', "id = `"$kv`"" -creplace 'STORE_REPO = "[^"]*"', "STORE_REPO = `"$repo`"")
 Write-Host "  storage ready"
 
 Step '3/6' 'First deploy (to learn your workers.dev address)'

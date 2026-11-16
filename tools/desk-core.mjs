@@ -14,6 +14,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkPart } from './part-rules.mjs';
+import { similarParts } from './similar.mjs';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const section = (body, title) => {
@@ -63,6 +64,9 @@ export function createDesk({ store, gh, admin, stats, publish }) {
       html: r.html || html, ok: r.ok, errors: r.errors, warnings: r.warnings, manifest: r.manifest || {},
       notes: historyOf(issue),
       updating: state !== 'listed' && !!(r.manifest && existsSync(join(store, 'parts', r.manifest.id))),
+      // Parts already in the store that this one looks like (store rules: parts that do the same job)
+      similar: r.manifest && r.manifest.id ? similarParts({ manifest: r.manifest, html: r.html || html, channel: channel && channel.id, store }) : [],
+      differs: (metaOf(r.manifest && r.manifest.id) || {}).differs || '',
     };
   }
   function readReport(issue) {
@@ -176,10 +180,17 @@ export function createDesk({ store, gh, admin, stats, publish }) {
         const old = metaOf(id);
         // Only the channel that first shared a part can update it
         if (old && (old.channel || old.owner) && old.channel !== s.channel.id) return { ok: false, reason: `"${id}" belongs to another channel. Decline this one.` };
+        // Parts that do the same job: a copy is declined; anything else needs one line on what it does more
+        const copied = s.similar.find((x) => x.copy && !x.sameChannel);
+        if (copied) return { ok: false, reason: `Most of the code is the same as "${copied.name}" by ${copied.by}. Decline this one.` };
+        const differs = String(a.differs || '').trim().slice(0, 120);
+        const like = s.similar.map((x) => x.id);
+        if (like.length && !differs && !a.notAlike) return { ok: false, reason: 'It looks like a part already in the store. Write what it does more, or tick "They are not alike".' };
         mkdirSync(dir, { recursive: true });
         writeFileSync(join(dir, 'index.html'), s.html);
         writeFileSync(join(dir, 'meta.json'), JSON.stringify({ id, author: s.channel.name, channel: s.channel.id, handle: s.channel.handle,
-          issue: i.number, added: (old && old.added) || today(), updated: today(), reviewed: today(), keywords: (old && old.keywords) || [] }, null, 2) + '\n');
+          issue: i.number, added: (old && old.added) || today(), updated: today(), reviewed: today(), keywords: (old && old.keywords) || [],
+          ...(like.length && differs && !a.notAlike ? { like, differs } : {}) }, null, 2) + '\n');
         await publish(`${old ? 'Update' : 'Add'} part ${id} (#${i.number})`);
         await gh.labels(i, ['listed'], ['needs-changes', 'declined']);
         await record(i, 'approve', note);

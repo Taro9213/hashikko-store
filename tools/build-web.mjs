@@ -5,6 +5,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, copyFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { BUILTINS } from './similar.mjs';
 
 const tools = dirname(fileURLToPath(import.meta.url));
 // HASHIKKO_STORE_ROOT: build a copy of the store somewhere else (the review demo uses this)
@@ -46,6 +47,8 @@ const statsScript = () => !STATS ? '' : `<script>
   document.querySelectorAll('[data-followers]').forEach((e) => { const n = (s.followers || {})[e.dataset.followers] || 0; e.textContent = fmt(n) + (n === 1 ? ' follower' : ' followers'); e.hidden = false; });
   // Parts paused while a reviewer looks at reports are not offered to new people
   (s.paused || []).forEach((id) => document.querySelectorAll('[data-part="' + id + '"]').forEach((e) => { e.hidden = true; }));
+  // Old look-alikes that few people use go to the bottom of each list
+  document.querySelectorAll('[data-stale]').forEach((c) => { if (((s.uses || {})[c.dataset.part] || 0) < 10 && c.parentElement) c.parentElement.append(c); });
   // "Popular": most used first
   document.querySelectorAll('[data-sort="uses"]').forEach((g) => [...g.children].sort((a, b) => ((s.uses || {})[b.dataset.part] || 0) - ((s.uses || {})[a.dataset.part] || 0)).forEach((c) => g.append(c)));
 })();
@@ -84,19 +87,21 @@ ${statsScript()}
 }
 
 // Parts that come with Hashikko (not in the catalog: they are inside the app). Shown with the official parts
-const BUILTINS = [
-  { id: 'memo', name: 'Notes', emoji: '📝', description: 'Quick notes, one edge away' },
-  { id: 'music', name: 'Music', emoji: '🎵', description: 'Control Spotify, YouTube and more from anywhere' },
-  { id: 'tidy', name: 'Tidy', emoji: '✨', description: 'Clean up your screen with one click before sharing' },
-];
+// (the list lives in similar.mjs, which also uses it to spot look-alike parts)
+// A part that looks like another one (store rules: parts that do the same job): one line on what it does more
+const plusLine = (p) => (p.differs ? `<small class="plus">＋ ${esc(p.differs)}</small>` : '');
+// Look-alikes that haven't been updated for half a year go to the bottom of lists (unless people use them: see statsScript)
+const STALE_DAYS = 180;
+const isStale = (p) => !!(p.like && p.like.length) && (Date.now() - Date.parse(p.updated || p.added || 0)) / 86400000 > STALE_DAYS;
+const staleLast = (list) => list.filter((p) => !isStale(p)).concat(list.filter(isStale));
 const builtinCard = (b) => `<a class="card" href="${SITE}parts/${esc(b.id)}.html" data-q="${esc((b.name + ' ' + b.description).toLowerCase())}">
   <span class="emoji">${esc(b.emoji)}</span>
   <span class="ctext"><b>${esc(b.name)}</b><small>${esc(b.description)}</small>
   <span class="by"><span class="badge">By Hashikko</span></span></span>
 </a>`;
-const card = (p, rootRel) => `<a class="card" href="${rootRel}parts/${esc(p.id)}.html" data-part="${esc(p.id)}" data-q="${esc([p.name, p.description, p.author, p.handle, ...(p.keywords || [])].join(' ').toLowerCase())}">
+const card = (p, rootRel) => `<a class="card" href="${rootRel}parts/${esc(p.id)}.html" data-part="${esc(p.id)}"${isStale(p) ? ' data-stale' : ''} data-q="${esc([p.name, p.description, p.differs, p.author, p.handle, ...(p.keywords || [])].join(' ').toLowerCase())}">
   <span class="emoji">${esc(p.emoji)}</span>
-  <span class="ctext"><b>${esc(p.name)}${isNew(p) ? ' <span class="badge new">New</span>' : ''}</b><small>${esc(p.description)}</small>
+  <span class="ctext"><b>${esc(p.name)}${isNew(p) ? ' <span class="badge new">New</span>' : ''}</b><small>${esc(p.description)}</small>${plusLine(p)}
   <span class="by">${official(p) ? '<span class="badge">By Hashikko</span>' : esc(p.author)} ${sampleBadge(p)}${official(p) ? '' : `<span class="uses" data-uses="${esc(p.id)}" hidden></span>`}</span></span>
 </a>`;
 // A channel, as a small card (like a creator row on YouTube)
@@ -131,7 +136,7 @@ function index() {
   ${theirs.length ? `<h2 class="section">From creators</h2><p class="sub">Parts made and shared by people who use Hashikko. A person reviews each one before it appears here. <a href="creators.html">See the creators</a></p>` : ''}
   ${fresh.length ? `<h3>New this week</h3>${grid(fresh)}` : ''}
   ${theirs.length > 1 && STATS ? `<h3>Popular</h3>${grid(theirs.slice(0, 8), 'uses')}` : ''}
-  ${theirs.length ? `<h3>All parts from creators</h3>${grid(theirs)}` : ''}
+  ${theirs.length ? `<h3>All parts from creators</h3>${grid(staleLast(theirs))}` : ''}
   </div>
   <!-- 検索の結果：部品を1つずつだけ（上の見出しでは、同じ部品が何回か出るため） -->
   <div class="grid" id="results" hidden>${BUILTINS.map(builtinCard).join(String.fromCharCode(10))}${ours.concat(theirs).map((p) => card(p, '')).join(String.fromCharCode(10))}</div>
@@ -182,6 +187,7 @@ function partPage(p) {
     <div>
       <h1>${esc(p.name)}</h1>
       <p class="lead">${esc(p.description)}</p>
+      ${p.differs ? `<p class="plus">＋ ${esc(p.differs)}</p>` : ''}
       <p class="by">${byLine(p, '../')}${p.handle ? ` <span class="muted">@${esc(p.handle)}</span>` : ''} ${sampleBadge(p)}
         ${official(p) ? '' : `<span class="uses" data-followers="${esc(p.creator)}" hidden></span><span class="uses" data-uses="${esc(p.id)}" hidden></span>`}</p>
       <p class="checked"><span class="tick">✓</span> Reviewed by a person${reviewed ? ` · ${esc(reviewed)}` : ''}</p>
@@ -320,7 +326,7 @@ function share() {
   <h2 id="rules">Store rules</h2>
   <div class="rules">
     <div><b>Good parts</b><ul><li>Finish a small task right in the panel</li><li>Are useful the moment they open</li><li>Say honestly what they do</li><li>Are in English</li></ul></div>
-    <div><b>Not allowed</b><ul><li>Hateful, harassing, violent or sexual content</li><li>Anything that tries to trick people, like fake login screens</li><li>Copying someone else's work, name or logo</li><li>Personal information about real people</li><li>Hidden code, network access, or other websites</li></ul></div>
+    <div><b>Not allowed</b><ul><li>Hateful, harassing, violent or sexual content</li><li>Anything that tries to trick people, like fake login screens</li><li>Copying someone else's work, name or logo</li><li>A second part that does the same job as one already in the store, without doing anything more</li><li>Personal information about real people</li><li>Hidden code, network access, or other websites</li></ul></div>
   </div>
   <h2>Your parts stay yours</h2>
   <p>There's no sign-up. Hashikko keeps a secret key on your computer that proves the parts you shared are yours, so only you can update them. If you change computers, save your recovery code first: in Hashikko, open Settings → Your shared parts → Copy recovery code.</p>

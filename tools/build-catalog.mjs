@@ -54,6 +54,8 @@ for (const id of readdirSync(partsDir).sort()) {
     updated: meta.updated || '',
     ...(meta.issue ? { issue: meta.issue } : {}),
     ...(meta.reviewed ? { reviewed: meta.reviewed } : {}),
+    // Looks like other parts (ids), and what this one does more, in one line written by the reviewer
+    ...(meta.differs ? { like: meta.like || [], differs: meta.differs } : {}),
     ...(meta.sample ? { sample: true } : {}),   // made-up example for testing. Remove before the store goes public
   });
   console.log(`✓ ${id}`);

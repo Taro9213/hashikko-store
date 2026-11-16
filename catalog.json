@@ -147,7 +147,11 @@
       "size": 6437,
       "updated": "2026-11-16",
       "issue": 3,
-      "reviewed": "2026-11-16"
+      "reviewed": "2026-11-16",
+      "like": [
+        "todo"
+      ],
+      "differs": "Adds a progress bar and All / To do / Done filters"
     },
     {
       "id": "vocabulary-notes",

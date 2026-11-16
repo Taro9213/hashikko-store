@@ -154,3 +154,7 @@ dd { margin: 0; }
 
 /* hidden を付けたものは、必ず隠す（.grid などの display より優先） */
 [hidden] { display: none !important; }
+
+/* A look-alike part: what it does more than the others (written by the reviewer) */
+.ctext small.plus { color: var(--accent-ink); font-weight: 600; font-size: 13.5px; }
+p.plus { color: var(--accent-ink); font-weight: 600; margin: 4px 0 8px; }

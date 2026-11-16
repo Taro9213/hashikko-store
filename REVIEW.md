@@ -30,6 +30,19 @@ Someone reports a part ──────▶ issue "Report: <id>" (label: report
 
 Notes to the creator are short and kind, and say what to change. They are shown in the creator's Hashikko.
 
+## Parts that do the same job
+
+The desk compares each part with the parts already in the store and the ones built into Hashikko (`tools/similar.mjs`: the words in the name, description and keywords, and the code). If it looks like one, a box "Looks like a part in the store" appears.
+
+| What the box says | What to do |
+|---|---|
+| Same code: looks copied (another creator) | Decline. The desk won't let you approve it. |
+| Their own part does this already | Ask for changes: update that part instead, unless this one clearly does something else. |
+| Does the same job (another creator, or Hashikko) | Approve only if it clearly does something more. Write that in one line ("Adds a progress bar and filters"). It shows on the part's card and page. |
+| The check got it wrong | Tick "They are not alike", and approve as usual. |
+
+Look-alike parts that haven't been updated for 180 days and have fewer than 10 uses move to the bottom of the store's lists by themselves.
+
 ## Where each step happens
 
 Both use the same desk (`tools/review-desk.html`) and the same decision logic (`tools/desk-core.mjs`).

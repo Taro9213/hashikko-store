@@ -19,6 +19,15 @@ Hashikko parts are small tools that help people finish a quick task without leav
 - Network access, other websites, pop-up windows, `alert()`, browser storage, and other things the automatic checks reject. Parts run in a sandbox, so these would not work anyway.
 - Permissions other than `storage` and `clipboard.write`.
 
+## Parts that do the same job
+
+Different people may make parts for the same task, like two to-do lists. That's welcome, as long as each one adds something.
+
+- **A copy of another creator's part** (the same code with a new name) is not accepted.
+- **If you already have a part that does this, update it** instead of sharing a second one.
+- **If someone else's part already does this**, yours is accepted when it clearly does something more. The reviewer writes that in one line (for example "＋ Adds a progress bar"), and it is shown on your part's card so people can choose.
+- A look-alike part that hasn't been updated for six months and few people use moves to the bottom of the lists.
+
 ## Technical rules
 
 - One HTML file, up to 400,000 characters, with all CSS and JavaScript inside.

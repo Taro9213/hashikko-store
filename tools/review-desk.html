@@ -241,6 +241,27 @@ function show(k, keep) {
   return i.kind === 'report' ? showReport(i) : showSubmission(i);
 }
 
+// Parts already in the store that this one looks like (store rules: parts that do the same job)
+function likeBox(i) {
+  const sim = i.similar || [];
+  if (!sim.length) return '';
+  const kind = (x) => x.copy ? (x.sameChannel ? 'Same code as their own part' : 'Same code: looks copied')
+    : x.sameChannel ? 'Their own part does this already' : 'Does the same job';
+  const copied = sim.some((x) => x.copy && !x.sameChannel);
+  const own = sim.some((x) => x.sameChannel);
+  return `<div class="box"><h2>Looks like a part in the store</h2>
+    <ul class="checks">${sim.map((x) => `<li class="warn">! ${esc(x.emoji)} <b>${esc(x.name)}</b> by ${esc(x.by)} · ${esc(kind(x))}
+      <small class="muted"> (${x.shared.length ? 'same words: ' + esc(x.shared.join(', ')) + ' · ' : ''}code ${Math.round(x.codeScore * 100)}% alike)</small></li>`).join('')}</ul>
+    <p class="small muted">${copied ? '<b>Decline it.</b> Copying another creator\'s part is not allowed.'
+      : own ? '<b>Ask for changes</b>: this creator should update their part instead of adding a second one, unless this one clearly does something else.'
+      : 'Approve only if it clearly does something more. Write that in one line; people see it on the card, so they know which to pick.'}</p>
+    <label class="flabel" for="differs">What it does more (shown on its card)</label>
+    <input id="differs" maxlength="120" value="${esc(i.differs || '')}" placeholder="E.g. Adds a progress bar and All / To do / Done filters"
+      style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit">
+    <label class="ck"><input type="checkbox" id="notAlike"> <span>They are not alike (the check got it wrong)</span></label>
+  </div>`;
+}
+
 function showSubmission(i) {
   const open = i.state === 'reviewing' || i.state === 'needs-changes';
   const checks = (i.ok
@@ -261,6 +282,7 @@ function showSubmission(i) {
         <label class="ck"><input type="checkbox" class="pt"> <span><b>Nothing harmful or misleading</b>: no hate, no sexual content, no fake login screens, no personal information.</span></label>
         <label class="ck"><input type="checkbox" class="pt"> <span><b>It's the creator's own work</b>: no one else's name, logo or copied tool.</span></label>
       </div>
+      ${likeBox(i)}
       <div class="box"><h2>3. Decide</h2>
         <label class="flabel" for="note">Note to ${esc(i.author || 'the creator')}</label>
         <textarea id="note" placeholder="Say what to change, kindly and briefly. Needed for everything except approving."></textarea>
@@ -379,6 +401,7 @@ function showChannel(c) {
 async function act(body) {
   if (body.action !== 'approve' && body.action !== 'pause' && body.action !== 'unpause' && $('note')) body.note = $('note').value;
   if (body.action === 'approve' && $('note')) body.note = $('note').value;
+  if (body.action === 'approve' && $('differs')) { body.differs = $('differs').value; body.notAlike = $('notAlike').checked; }
   const r = await (await fetch('/desk/act', { method: 'POST', body: JSON.stringify(body) })).json();
   $('msg').className = 'msg ' + (r.ok ? 'ok' : 'err');
   $('msg').textContent = r.ok ? 'Done. The creator will see it in Hashikko.' + (r.result ? ` (${r.result})` : '') : r.reason;

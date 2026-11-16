@@ -91,7 +91,7 @@ const BUILTINS = [
 const builtinCard = (b) => `<a class="card" href="${SITE}parts/${esc(b.id)}.html" data-q="${esc((b.name + ' ' + b.description).toLowerCase())}">
   <span class="emoji">${esc(b.emoji)}</span>
   <span class="ctext"><b>${esc(b.name)}</b><small>${esc(b.description)}</small>
-  <span class="by"><span class="badge">Built into Hashikko</span></span></span>
+  <span class="by"><span class="badge">By Hashikko</span></span></span>
 </a>`;
 const card = (p, rootRel) => `<a class="card" href="${rootRel}parts/${esc(p.id)}.html" data-part="${esc(p.id)}" data-q="${esc([p.name, p.description, p.author, p.handle, ...(p.keywords || [])].join(' ').toLowerCase())}">
   <span class="emoji">${esc(p.emoji)}</span>
@@ -125,7 +125,7 @@ function index() {
 <section class="list"><div class="wrap">
   <div id="browse">
   <h2>Made by Hashikko</h2>
-  <p class="sub">Official parts. Notes, Music and Tidy come with Hashikko; add the others in one click.</p>
+  <p class="sub">Official parts, made by the Hashikko team.</p>
   <div class="grid">${BUILTINS.map(builtinCard).join(String.fromCharCode(10))}${ours.map((p) => card(p, '')).join(String.fromCharCode(10))}</div>
   ${theirs.length ? `<h2 class="section">From creators</h2><p class="sub">Parts made and shared by people who use Hashikko. A person reviews each one before it appears here. <a href="creators.html">See the creators</a></p>` : ''}
   ${fresh.length ? `<h3>New this week</h3>${grid(fresh)}` : ''}

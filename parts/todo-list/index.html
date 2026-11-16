@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://app.hashikko/base.css">
+<script src="https://app.hashikko/sdk.js"></script>
+<script type="application/json" id="hashikko-manifest">
+{"id":"todo-list","name":"To-do list","description":"Add tasks, check them off, and keep them saved","emoji":"✅","version":"1.0.0","keyboard":true,"permissions":["storage"]}
+</script>
+<style>
+* { box-sizing: border-box; }
+.wrap { height: 100%; padding: 16px; display: flex; flex-direction: column; gap: 12px; font-size: 13px; color: var(--text); }
+.add-row { display: flex; gap: 8px; }
+.add-row input { flex: 1; min-width: 0; height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 14px; user-select: text; outline: none; }
+.add-row input:focus { border-color: var(--accent); }
+.add-btn { width: 44px; height: 44px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 24px; font-weight: 700; line-height: 1; }
+.summary { display: flex; align-items: baseline; gap: 6px; }
+.big { font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sub { color: var(--muted); }
+.bar { height: 6px; border-radius: 3px; background: var(--track); overflow: hidden; }
+.bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+.list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+.item { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 6px 8px 6px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); }
+.item:hover { background: var(--hover); }
+.chk { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700; }
+.item.done .chk { background: var(--accent); border-color: var(--accent); }
+.txt { flex: 1; min-width: 0; word-break: break-word; user-select: text; cursor: pointer; }
+.item.done .txt { color: var(--muted); text-decoration: line-through; }
+.del { flex: none; width: 30px; height: 30px; border-radius: 8px; color: var(--muted); font-size: 16px; }
+.del:hover { background: var(--hover); color: var(--text); }
+.empty { color: var(--muted); text-align: center; margin-top: 40px; }
+.foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tabs { display: flex; gap: 4px; }
+.tab { min-height: 34px; padding: 0 10px; border-radius: 8px; color: var(--muted); }
+.tab:hover { background: var(--hover); }
+.tab.on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.clear { min-height: 34px; padding: 0 10px; border-radius: 8px; color: var(--muted); }
+.clear:hover { background: var(--hover); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="add-row">
+    <input id="inp" type="text" placeholder="Add a task..." maxlength="200" autocomplete="off">
+    <button class="add-btn" id="add" aria-label="Add task">+</button>
+  </div>
+  <div class="summary"><span class="big" id="left">0</span><span class="sub" id="leftLabel">tasks left</span></div>
+  <div class="bar"><div id="fill"></div></div>
+  <div class="list" id="list"></div>
+  <div class="foot">
+    <div class="tabs">
+      <button class="tab on" data-f="all">All</button>
+      <button class="tab" data-f="active">To do</button>
+      <button class="tab" data-f="done">Done</button>
+    </div>
+    <button class="clear" id="clear">Clear done</button>
+  </div>
+</div>
+<script>
+let items = [];
+let filter = 'all';
+const $ = (id) => document.getElementById(id);
+const save = () => hashikko.call('storage.set', { key: 'data', value: items });
+
+function render() {
+  const list = $('list');
+  list.textContent = '';
+  const shown = items.filter((t) => filter === 'all' || (filter === 'done' ? t.done : !t.done));
+  if (!shown.length) {
+    const e = document.createElement('div');
+    e.className = 'empty';
+    e.textContent = items.length ? 'Nothing here' : 'No tasks yet. Add your first one!';
+    list.appendChild(e);
+  }
+  shown.forEach((t) => {
+    const row = document.createElement('div');
+    row.className = 'item' + (t.done ? ' done' : '');
+    const chk = document.createElement('button');
+    chk.className = 'chk';
+    chk.textContent = t.done ? '✓' : '';
+    chk.addEventListener('click', () => toggle(t.id));
+    const txt = document.createElement('div');
+    txt.className = 'txt';
+    txt.textContent = t.text;
+    txt.addEventListener('click', () => toggle(t.id));
+    const del = document.createElement('button');
+    del.className = 'del';
+    del.textContent = '✕';
+    del.setAttribute('aria-label', 'Delete task');
+    del.addEventListener('click', () => { items = items.filter((x) => x.id !== t.id); save(); render(); });
+    row.append(chk, txt, del);
+    list.appendChild(row);
+  });
+  const left = items.filter((t) => !t.done).length;
+  const done = items.length - left;
+  $('left').textContent = left;
+  $('leftLabel').textContent = left === 1 ? 'task left' : 'tasks left';
+  $('fill').style.width = items.length ? Math.round(done / items.length * 100) + '%' : '0';
+  $('clear').style.visibility = done ? 'visible' : 'hidden';
+  document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('on', b.dataset.f === filter));
+}
+
+function toggle(id) {
+  const t = items.find((x) => x.id === id);
+  if (t) { t.done = !t.done; save(); render(); }
+}
+
+function addTask() {
+  const v = $('inp').value.trim();
+  if (!v) return;
+  items.unshift({ id: Date.now() + Math.random(), text: v, done: false });
+  $('inp').value = '';
+  save(); render();
+  $('inp').focus();
+}
+
+$('add').addEventListener('click', addTask);
+$('inp').addEventListener('keydown', (e) => { if (e.key === 'Enter') addTask(); });
+$('clear').addEventListener('click', () => { items = items.filter((t) => !t.done); save(); render(); });
+document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => { filter = b.dataset.f; render(); }));
+
+hashikko.call('storage.get', { key: 'data' }).then((r) => {
+  if (r && Array.isArray(r.value)) items = r.value;
+  render();
+});
+render();
+hashikko.onVisible((v) => { if (v) $('inp').focus(); });
+</script>
+</body>
+</html>

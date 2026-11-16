@@ -129,6 +129,27 @@
       "updated": "2026-11-12"
     },
     {
+      "id": "todo-list",
+      "name": "To-do list",
+      "description": "Add tasks, check them off, and keep them saved",
+      "emoji": "✅",
+      "version": "1.0.0",
+      "author": "Taro",
+      "creator": "68f4968ea60a",
+      "handle": "tarotools",
+      "added": "2026-11-16",
+      "keywords": [],
+      "permissions": [
+        "storage"
+      ],
+      "keyboard": true,
+      "sha256": "76889dc30a2523ce5f7cc0b41c3e2cd8b18e1f9aea70ee2ecd1d838bb2ec6fb5",
+      "size": 6437,
+      "updated": "2026-11-16",
+      "issue": 3,
+      "reviewed": "2026-11-16"
+    },
+    {
       "id": "vocabulary-notes",
       "name": "Vocabulary notes",
       "description": "Save new words with their meanings and look them up fast",

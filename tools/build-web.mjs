@@ -82,10 +82,21 @@ ${statsScript()}
 `;
 }
 
+// Parts that come with Hashikko (not in the catalog: they are inside the app). Shown with the official parts
+const BUILTINS = [
+  { id: 'memo', name: 'Notes', emoji: '📝', description: 'Quick notes, one edge away' },
+  { id: 'music', name: 'Music', emoji: '🎵', description: 'Control Spotify, YouTube and more from anywhere' },
+  { id: 'tidy', name: 'Tidy', emoji: '✨', description: 'Clean up your screen with one click before sharing' },
+];
+const builtinCard = (b) => `<a class="card" href="${SITE}parts/${esc(b.id)}.html" data-q="${esc((b.name + ' ' + b.description).toLowerCase())}">
+  <span class="emoji">${esc(b.emoji)}</span>
+  <span class="ctext"><b>${esc(b.name)}</b><small>${esc(b.description)}</small>
+  <span class="by"><span class="badge">Built into Hashikko</span></span></span>
+</a>`;
 const card = (p, rootRel) => `<a class="card" href="${rootRel}parts/${esc(p.id)}.html" data-part="${esc(p.id)}" data-q="${esc([p.name, p.description, p.author, p.handle, ...(p.keywords || [])].join(' ').toLowerCase())}">
   <span class="emoji">${esc(p.emoji)}</span>
   <span class="ctext"><b>${esc(p.name)}${isNew(p) ? ' <span class="badge new">New</span>' : ''}</b><small>${esc(p.description)}</small>
-  <span class="by">${official(p) ? '<span class="badge">By Hashikko</span>' : esc(p.author)} ${sampleBadge(p)}<span class="uses" data-uses="${esc(p.id)}" hidden></span></span></span>
+  <span class="by">${official(p) ? '<span class="badge">By Hashikko</span>' : esc(p.author)} ${sampleBadge(p)}${official(p) ? '' : `<span class="uses" data-uses="${esc(p.id)}" hidden></span>`}</span></span>
 </a>`;
 // A channel, as a small card (like a creator row on YouTube)
 const channelCard = (c, rootRel) => `<a class="card creator" href="${rootRel}creators/${esc(c.id)}.html" data-q="${esc((c.name + ' ' + (c.handle || '')).toLowerCase())}">
@@ -98,7 +109,7 @@ function index() {
   const ours = catalog.filter(official);
   const theirs = catalog.filter((p) => !official(p));
   const grid = (list, sort) => `<div class="grid"${sort ? ` data-sort="${sort}"` : ''}>${list.map((p) => card(p, '')).join('\n')}</div>`;
-  const fresh = catalog.filter(isNew).sort((a, b) => String(b.added).localeCompare(String(a.added))).slice(0, 8);
+  const fresh = theirs.filter(isNew).sort((a, b) => String(b.added).localeCompare(String(a.added))).slice(0, 8);
   const people = [...creators.values()].filter((c) => c.id !== 'hashikko').sort((a, b) => b.parts.length - a.parts.length).slice(0, 8);
   return page({
     title: 'Hashikko Store: small tools for the edge of your screen',
@@ -112,14 +123,16 @@ function index() {
   <input class="search" id="q" type="search" placeholder="Search parts (e.g. timer, calculator)" aria-label="Search parts">
 </div></section>
 <section class="list"><div class="wrap">
-  ${fresh.length ? `<h2>New this week</h2>${grid(fresh)}` : ''}
-  ${catalog.length > 1 && STATS ? `<h2>Popular</h2>${grid(catalog.slice(0, 8), 'uses')}` : ''}
-  ${people.length ? `<h2>Creators to follow</h2><div class="grid">${people.map((c) => channelCard(c, '')).join('\n')}</div>` : ''}
-  ${theirs.length ? `<h2>From the community</h2>${grid(theirs)}` : ''}
   <h2>Made by Hashikko</h2>
-  ${grid(ours)}
+  <p class="sub">Official parts. Notes, Music and Tidy come with Hashikko; add the others in one click.</p>
+  <div class="grid">${BUILTINS.map(builtinCard).join('\n')}${ours.map((p) => card(p, '')).join('\n')}</div>
+  ${theirs.length ? `<h2 class="section">From creators</h2><p class="sub">Parts made and shared by people who use Hashikko. A person reviews each one before it appears here.</p>` : ''}
+  ${fresh.length ? `<h3>New this week</h3>${grid(fresh)}` : ''}
+  ${theirs.length > 1 && STATS ? `<h3>Popular</h3>${grid(theirs.slice(0, 8), 'uses')}` : ''}
+  ${people.length ? `<h3>Creators to follow</h3><div class="grid">${people.map((c) => channelCard(c, '')).join('\n')}</div>` : ''}
+  ${theirs.length ? `<h3>All parts from creators</h3>${grid(theirs)}` : ''}
   <p class="none" id="none" hidden>No part matches yet. <a href="share.html">Make it with AI and share it.</a></p>
-  <div class="cta"><div><b>Made something useful?</b><span>Share it from the app in one click. No account needed.</span></div><a class="btn primary" href="share.html">How sharing works</a></div>
+  <div class="cta"><div><b>Made something useful?</b><span>Sign in with Google in the app, pick a channel name, and share it in one click.</span></div><a class="btn primary" href="share.html">How sharing works</a></div>
 </div></section>
 <script>
 const q = document.getElementById('q');
@@ -164,7 +177,7 @@ function partPage(p) {
       <h1>${esc(p.name)}</h1>
       <p class="lead">${esc(p.description)}</p>
       <p class="by">${byLine(p, '../')}${p.handle ? ` <span class="muted">@${esc(p.handle)}</span>` : ''} ${sampleBadge(p)}
-        ${official(p) ? '' : `<span class="uses" data-followers="${esc(p.creator)}" hidden></span>`}<span class="uses" data-uses="${esc(p.id)}" hidden></span></p>
+        ${official(p) ? '' : `<span class="uses" data-followers="${esc(p.creator)}" hidden></span><span class="uses" data-uses="${esc(p.id)}" hidden></span>`}</p>
       <p class="checked"><span class="tick">✓</span> Reviewed by a person${reviewed ? ` · ${esc(reviewed)}` : ''}</p>
     </div>
   </div>
@@ -232,14 +245,14 @@ function creatorPage(c) {
     ${c.id === 'hashikko' ? '<span class="avatar big brandmark" aria-hidden="true"></span>' : avatar(c.name).replace('avatar', 'avatar big')}
     <div>
       <h1>${esc(c.name)}</h1>
-      <p class="lead">${c.handle ? `<b>@${esc(c.handle)}</b> · ` : ''}<span data-followers="${esc(c.id)}" hidden></span>${STATS ? ' · ' : ''}${mine.length} ${mine.length === 1 ? 'part' : 'parts'} · <span data-sum-uses="${esc(mine.map((p) => p.id).join(','))}" hidden></span></p>
+      <p class="lead">${c.handle ? `<b>@${esc(c.handle)}</b> · ` : ''}${c.id === 'hashikko' ? `${mine.length} official ${mine.length === 1 ? 'part' : 'parts'}` : `<span data-followers="${esc(c.id)}" hidden></span>${STATS ? ' · ' : ''}${mine.length} ${mine.length === 1 ? 'part' : 'parts'} · <span data-sum-uses="${esc(mine.map((p) => p.id).join(','))}" hidden></span>`}</p>
       <p class="by">${c.id === 'hashikko' ? '<span class="badge">The Hashikko team</span>' : `Sharing since ${esc(String(c.first).slice(0, 7))}`} ${c.parts.some((p) => p.sample) ? sampleBadge({ sample: true }) : ''}</p>
       ${c.id === 'hashikko' ? '' : '<p class="note">To follow, open this creator\'s part in Hashikko and tap <b>Follow</b>. You\'ll see their new parts first.</p>'}
     </div>
   </div>
   <h2>Newest</h2>
   <div class="grid">${mine.map((p) => card(p, '../')).join('\n')}</div>
-  ${STATS && mine.length > 1 ? `<h2>Most used</h2><div class="grid" data-sort="uses">${mine.map((p) => card(p, '../')).join('\n')}</div>` : ''}
+  ${STATS && mine.length > 1 && c.id !== 'hashikko' ? `<h2>Most used</h2><div class="grid" data-sort="uses">${mine.map((p) => card(p, '../')).join('\n')}</div>` : ''}
 </div></section>`,
   });
 }

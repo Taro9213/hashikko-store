@@ -14,7 +14,8 @@ You give us a worldwide, non-exclusive, royalty-free permission to:
 
 - store, copy, review and test your part;
 - list it in the store and on the store website, with its name, description, emoji, pictures of it, and your channel name;
-- let anyone add it to their own Hashikko and use it.
+- let anyone add it to their own Hashikko and use it;
+- run it as a preview on the store website and in review. To do that, we add the small technical pieces it needs to run there (the Hashikko look and tools, and safety settings that keep it off the internet). This doesn't change what your part does.
 
 We may let the services that run the store for us (for example, hosting) do these things on our behalf, only to run the store.
 
@@ -22,7 +23,7 @@ Non-exclusive means you can give the same permission to anyone else.
 
 ## 3. We don't change your part
 
-We do not rewrite your part. If something needs to change, we ask you in a note, and you share an updated version.
+We do not rewrite your part (apart from the preview pieces in section 2). If something needs to change, we ask you in a note, and you share an updated version.
 
 ## 4. Removing your part
 

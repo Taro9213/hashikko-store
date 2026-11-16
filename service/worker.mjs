@@ -397,6 +397,7 @@ async function stats(env) {
 // ---------- downloads of the app (counted on the website's Download buttons) ----------
 // The buttons on https://taro9213.github.io/hashikko/download.html point here. We count the click, then send the
 // browser on to the zip on the website. "people" counts each IP once per day (stored only as a salted hash, for 2 days).
+// The counts are not public.
 const SITE = 'https://taro9213.github.io/hashikko/';
 const OSES = ['mac', 'windows'];
 async function download(req, env, url) {
@@ -431,10 +432,8 @@ async function download(req, env, url) {
   return Response.redirect(target, 302);
 }
 
-async function downloads(env) {
-  const d = (await db(env).get('downloads')) || { total: {}, people: {}, days: {} };
-  return json({ ok: true, ...d }, 200, { 'access-control-allow-origin': '*' });
-}
+// The counts are private: only the owner reads them (Cloudflare dashboard → Workers KV → DB → "downloads",
+// `npx wrangler kv key get downloads --binding DB --remote`, or the admin action "downloads").
 
 // ---------- reviewers ----------
 // Decisions, modeled on YouTube's Community Guidelines strikes: the first rule-break is a warning,
@@ -445,6 +444,8 @@ export async function admin(env, b) {
   const ch = b.channel ? await st.get('ch:' + b.channel) : null;
   const save = async () => { await st.put('ch:' + ch.id, ch); };
   switch (b.action) {
+    case 'downloads':
+      return { ok: true, ...((await st.get('downloads')) || { total: {}, people: {}, days: {} }) };
     case 'channels': {
       const s = (await st.get('stats')) || { channels: {} };
       const out = [];
@@ -536,7 +537,6 @@ export default {
       if (req.method === 'POST' && p === '/v1/used') return await used(req, env);
       if (req.method === 'GET' && p === '/v1/stats') return await stats(env);
       if (req.method === 'GET' && p === '/v1/download') return await download(req, env, url);
-      if (req.method === 'GET' && p === '/v1/downloads') return await downloads(env);
       if (req.method === 'POST' && p === '/v1/admin') {
         if (!env.ADMIN_TOKEN || req.headers.get('authorization') !== 'Bearer ' + env.ADMIN_TOKEN) return json({ ok: false, reason: 'forbidden' }, 403);
         return json(await admin(env, (await readJson(req)) || {}));

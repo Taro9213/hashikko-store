@@ -102,7 +102,7 @@ const card = (p, rootRel) => `<a class="card" href="${rootRel}parts/${esc(p.id)}
 const channelCard = (c, rootRel) => `<a class="card creator" href="${rootRel}creators/${esc(c.id)}.html" data-q="${esc((c.name + ' ' + (c.handle || '')).toLowerCase())}">
   ${c.id === 'hashikko' ? '<span class="avatar brandmark" aria-hidden="true"></span>' : avatar(c.name)}
   <span class="ctext"><b>${esc(c.name)}</b><small>${c.handle ? '@' + esc(c.handle) + ' · ' : ''}${c.parts.length} ${c.parts.length === 1 ? 'part' : 'parts'}</small>
-  <span class="by"><span class="uses" data-followers="${esc(c.id)}" hidden></span></span></span>
+  <span class="by"><span class="followers" data-followers="${esc(c.id)}" hidden></span></span></span>
 </a>`;
 
 function index() {
@@ -123,14 +123,17 @@ function index() {
   <input class="search" id="q" type="search" placeholder="Search parts (e.g. timer, calculator)" aria-label="Search parts">
 </div></section>
 <section class="list"><div class="wrap">
+  <div id="browse">
   <h2>Made by Hashikko</h2>
   <p class="sub">Official parts. Notes, Music and Tidy come with Hashikko; add the others in one click.</p>
-  <div class="grid">${BUILTINS.map(builtinCard).join('\n')}${ours.map((p) => card(p, '')).join('\n')}</div>
-  ${theirs.length ? `<h2 class="section">From creators</h2><p class="sub">Parts made and shared by people who use Hashikko. A person reviews each one before it appears here.</p>` : ''}
+  <div class="grid">${BUILTINS.map(builtinCard).join(String.fromCharCode(10))}${ours.map((p) => card(p, '')).join(String.fromCharCode(10))}</div>
+  ${theirs.length ? `<h2 class="section">From creators</h2><p class="sub">Parts made and shared by people who use Hashikko. A person reviews each one before it appears here. <a href="creators.html">See the creators</a></p>` : ''}
   ${fresh.length ? `<h3>New this week</h3>${grid(fresh)}` : ''}
   ${theirs.length > 1 && STATS ? `<h3>Popular</h3>${grid(theirs.slice(0, 8), 'uses')}` : ''}
-  ${people.length ? `<h3>Creators to follow</h3><div class="grid">${people.map((c) => channelCard(c, '')).join('\n')}</div>` : ''}
   ${theirs.length ? `<h3>All parts from creators</h3>${grid(theirs)}` : ''}
+  </div>
+  <!-- 検索の結果：部品を1つずつだけ（上の見出しでは、同じ部品が何回か出るため） -->
+  <div class="grid" id="results" hidden>${BUILTINS.map(builtinCard).join(String.fromCharCode(10))}${ours.concat(theirs).map((p) => card(p, '')).join(String.fromCharCode(10))}</div>
   <p class="none" id="none" hidden>No part matches yet. <a href="share.html">Make it with AI and share it.</a></p>
   <div class="cta"><div><b>Made something useful?</b><span>Sign in with Google in the app, pick a channel name, and share it in one click.</span></div><a class="btn primary" href="share.html">How sharing works</a></div>
 </div></section>
@@ -138,10 +141,12 @@ function index() {
 const q = document.getElementById('q');
 q.addEventListener('input', () => {
   const v = q.value.trim().toLowerCase();
+  const results = document.getElementById('results');
+  document.getElementById('browse').hidden = !!v;
+  results.hidden = !v;
   let shown = 0;
-  document.querySelectorAll('.card').forEach((c) => { const on = !v || c.dataset.q.includes(v); c.hidden = !on; if (on) shown++; });
-  document.querySelectorAll('.list h2').forEach((h) => { h.hidden = !!v; });
-  document.getElementById('none').hidden = shown > 0;
+  results.querySelectorAll('.card').forEach((c) => { const on = !!v && c.dataset.q.includes(v); c.hidden = !on; if (on) shown++; });
+  document.getElementById('none').hidden = !v || shown > 0;
 });
 </script>`,
   });

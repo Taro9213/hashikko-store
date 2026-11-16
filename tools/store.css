@@ -140,3 +140,4 @@ dd { margin: 0; }
 .list .sub { color: #6b7280; margin: -4px 0 14px; font-size: 14.5px; }
 .list h2.section { margin-top: 44px; padding-top: 28px; border-top: 1px solid rgba(0,0,0,.08); }
 .list h3 { font-size: 16px; margin: 22px 0 10px; color: #374151; }
+.followers { color: var(--muted); font-size: 13px; }

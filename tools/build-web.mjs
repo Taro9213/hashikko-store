@@ -40,7 +40,8 @@ const statsScript = () => !STATS ? '' : `<script>
   let s; try { s = await (await fetch(${JSON.stringify(STATS)}, { cache: 'no-store' })).json(); } catch { return; }
   if (!s || !s.ok) return;
   const fmt = (n) => n >= 1000000 ? (n / 1000000).toFixed(1).replace(/\\.0$/, '') + 'M' : n >= 1000 ? (n / 1000).toFixed(1).replace(/\\.0$/, '') + 'K' : String(n);
-  document.querySelectorAll('[data-uses]').forEach((e) => { const n = (s.uses || {})[e.dataset.uses] || 0; e.textContent = fmt(n) + (n === 1 ? ' use' : ' uses'); e.hidden = false; });
+  // Use counts show only from 10 uses, and in lists only under Most used / Popular
+  document.querySelectorAll('[data-uses]').forEach((e) => { const n = (s.uses || {})[e.dataset.uses] || 0; const g = e.closest('.grid'); if (n < 10 || (g && g.dataset.sort !== 'uses')) return; e.textContent = fmt(n) + ' uses'; e.hidden = false; });
   document.querySelectorAll('[data-sum-uses]').forEach((e) => { const n = e.dataset.sumUses.split(',').reduce((a, id) => a + ((s.uses || {})[id] || 0), 0); e.textContent = fmt(n) + ' uses'; e.hidden = false; });
   document.querySelectorAll('[data-followers]').forEach((e) => { const n = (s.followers || {})[e.dataset.followers] || 0; e.textContent = fmt(n) + (n === 1 ? ' follower' : ' followers'); e.hidden = false; });
   // Parts paused while a reviewer looks at reports are not offered to new people
@@ -250,14 +251,23 @@ function creatorPage(c) {
     ${c.id === 'hashikko' ? '<span class="avatar big brandmark" aria-hidden="true"></span>' : avatar(c.name).replace('avatar', 'avatar big')}
     <div>
       <h1>${esc(c.name)}</h1>
-      <p class="lead">${c.handle ? `<b>@${esc(c.handle)}</b> · ` : ''}${c.id === 'hashikko' ? `${mine.length} official ${mine.length === 1 ? 'part' : 'parts'}` : `<span data-followers="${esc(c.id)}" hidden></span>${STATS ? ' · ' : ''}${mine.length} ${mine.length === 1 ? 'part' : 'parts'} · <span data-sum-uses="${esc(mine.map((p) => p.id).join(','))}" hidden></span>`}</p>
+      <p class="lead">${c.handle ? `<b>@${esc(c.handle)}</b> · ` : ''}${c.id === 'hashikko' ? `${mine.length} official ${mine.length === 1 ? 'part' : 'parts'}` : `<span data-followers="${esc(c.id)}" hidden></span>${STATS ? ' · ' : ''}${mine.length} ${mine.length === 1 ? 'part' : 'parts'}`}</p>
       <p class="by">${c.id === 'hashikko' ? '<span class="badge">The Hashikko team</span>' : `Sharing since ${esc(String(c.first).slice(0, 7))}`} ${c.parts.some((p) => p.sample) ? sampleBadge({ sample: true }) : ''}</p>
       ${c.id === 'hashikko' ? '' : '<p class="note">To follow, open this creator\'s part in Hashikko and tap <b>Follow</b>. You\'ll see their new parts first.</p>'}
     </div>
   </div>
-  <h2>Newest</h2>
-  <div class="grid">${mine.map((p) => card(p, '../')).join('\n')}</div>
-  ${STATS && mine.length > 1 && c.id !== 'hashikko' ? `<h2>Most used</h2><div class="grid" data-sort="uses">${mine.map((p) => card(p, '../')).join('\n')}</div>` : ''}
+  <div class="tabs" role="tablist">
+    <button class="tab on" role="tab" aria-selected="true" data-tab="used">Most used</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="new">Newest</button>
+  </div>
+  <div class="grid" data-panel="used" data-sort="uses">${mine.map((p) => card(p, '../')).join('\n')}</div>
+  <div class="grid" data-panel="new" hidden>${mine.map((p) => card(p, '../')).join('\n')}</div>
+  <script>
+  document.querySelectorAll('.tabs .tab').forEach((t) => t.addEventListener('click', () => {
+    document.querySelectorAll('.tabs .tab').forEach((x) => { const on = x === t; x.classList.toggle('on', on); x.setAttribute('aria-selected', String(on)); });
+    document.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== t.dataset.tab; });
+  }));
+  </script>
 </div></section>`,
   });
 }

@@ -261,6 +261,10 @@ async function submit(req, env) {
     '- [X] My part follows the Guidelines.',
     '- [X] I made this part (with or without AI help), and it does not copy anyone else\'s work, name or logo.',
     '- [X] The part contains no personal information (mine or anyone else\'s).',
+    // 部品の規約（PART-TERMS.md）に同意した版を、審査の記録に残す
+    typeof b.terms === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.terms)
+      ? `- [X] I agree to the Part Terms (version ${b.terms}): I keep the copyright, and I let Hashikko list my part and let anyone use it, also if Hashikko changes owner.`
+      : '- [ ] Part Terms: not shown (sent from an older Hashikko app).',
     '', r.warnings.length ? '### Notes from the automatic checks\n\n' + r.warnings.map((w) => `- ${w}`).join('\n') : '',
   ].join('\n');
   const issue = await github(env, '/issues', {

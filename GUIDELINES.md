@@ -42,4 +42,8 @@ Different people may make parts for the same task, like two to-do lists. That's 
 - Repeated or serious violations mean we stop accepting parts from that account.
 - Copyright owners can ask for removal by opening a **Report a part** issue.
 
+## Your rights in your part
+
+You keep the copyright in your part. By sharing it, you let Hashikko list it and let people use it. The [Part Terms](PART-TERMS.md) explain the details.
+
 These Guidelines may change as the store grows.

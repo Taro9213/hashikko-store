@@ -89,7 +89,27 @@ ${statsScript()}
 // Parts that come with Hashikko (not in the catalog: they are inside the app). Shown with the official parts
 // (the list lives in similar.mjs, which also uses it to spot look-alike parts)
 // A part that looks like another one (store rules: parts that do the same job): one line on what it does more
-const plusLine = (p) => (p.differs ? `<small class="plus">＋ ${esc(p.differs)}</small>` : '');
+// It shows on the part's page, side by side with the parts it looks like (not on the cards in lists)
+function compareBox(p) {
+  if (!p.differs || !(p.like || []).length) return '';
+  const others = p.like.map((id) => {
+    const b = BUILTINS.find((x) => x.id === id);
+    if (b) return { ...b, by: 'Hashikko', href: `${SITE}parts/${b.id}.html` };
+    const o = catalog.find((x) => x.id === id);
+    return o && { ...o, by: official(o) ? 'Hashikko' : o.author, href: `${esc(o.id)}.html` };
+  }).filter(Boolean);
+  if (!others.length) return '';
+  const row = (x, me) => `<div class="crow${me ? ' me' : ''}">
+      <span class="emoji">${esc(x.emoji)}</span>
+      <div><b>${me ? esc(x.name) : `<a href="${x.href}">${esc(x.name)}</a>`}</b> <span class="muted">${me ? 'This part' : 'By ' + esc(x.by)}</span>
+        <small>${esc(x.description)}</small>${me ? `<small class="plus">＋ ${esc(p.differs)}</small>` : ''}</div>
+    </div>`;
+  return `<div class="compare">
+    <h2>Compared with similar parts</h2>
+    <p class="note">These parts do a similar job. Here's what this one does more.</p>
+    ${others.map((x) => row(x, false)).join('')}${row(p, true)}
+  </div>`;
+}
 // Look-alikes that haven't been updated for half a year go to the bottom of lists (unless people use them: see statsScript)
 const STALE_DAYS = 180;
 const isStale = (p) => !!(p.like && p.like.length) && (Date.now() - Date.parse(p.updated || p.added || 0)) / 86400000 > STALE_DAYS;
@@ -101,7 +121,7 @@ const builtinCard = (b) => `<a class="card" href="${SITE}parts/${esc(b.id)}.html
 </a>`;
 const card = (p, rootRel) => `<a class="card" href="${rootRel}parts/${esc(p.id)}.html" data-part="${esc(p.id)}"${isStale(p) ? ' data-stale' : ''} data-q="${esc([p.name, p.description, p.differs, p.author, p.handle, ...(p.keywords || [])].join(' ').toLowerCase())}">
   <span class="emoji">${esc(p.emoji)}</span>
-  <span class="ctext"><b>${esc(p.name)}${isNew(p) ? ' <span class="badge new">New</span>' : ''}</b><small>${esc(p.description)}</small>${plusLine(p)}
+  <span class="ctext"><b>${esc(p.name)}${isNew(p) ? ' <span class="badge new">New</span>' : ''}</b><small>${esc(p.description)}</small>
   <span class="by">${official(p) ? '<span class="badge">By Hashikko</span>' : esc(p.author)} ${sampleBadge(p)}${official(p) ? '' : `<span class="uses" data-uses="${esc(p.id)}" hidden></span>`}</span></span>
 </a>`;
 // A channel, as a small card (like a creator row on YouTube)
@@ -187,7 +207,6 @@ function partPage(p) {
     <div>
       <h1>${esc(p.name)}</h1>
       <p class="lead">${esc(p.description)}</p>
-      ${p.differs ? `<p class="plus">＋ ${esc(p.differs)}</p>` : ''}
       <p class="by">${byLine(p, '../')}${p.handle ? ` <span class="muted">@${esc(p.handle)}</span>` : ''} ${sampleBadge(p)}
         ${official(p) ? '' : `<span class="uses" data-followers="${esc(p.creator)}" hidden></span><span class="uses" data-uses="${esc(p.id)}" hidden></span>`}</p>
       <p class="checked"><span class="tick">✓</span> Reviewed by a person${reviewed ? ` · ${esc(reviewed)}` : ''}</p>
@@ -218,6 +237,7 @@ function partPage(p) {
       </dl>
     </div>
   </div>
+  ${compareBox(p)}
   <details class="code">
     <summary><b>See the code</b><span>Every part is one HTML file. Nothing is hidden.</span></summary>
     <pre><code>${esc(html)}</code></pre>

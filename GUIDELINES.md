@@ -25,7 +25,7 @@ Different people may make parts for the same task, like two to-do lists. That's 
 
 - **A copy of another creator's part** (the same code with a new name) is not accepted.
 - **If you already have a part that does this, update it** instead of sharing a second one.
-- **If someone else's part already does this**, yours is accepted when it clearly does something more. The reviewer writes that in one line (for example "＋ Adds a progress bar"), and it is shown on your part's card so people can choose.
+- **If someone else's part already does this**, yours is accepted when it clearly does something more. The reviewer writes that in one line (for example "＋ Adds a progress bar"), and it is shown on your part's page, next to the part it looks like, so people can compare.
 - A look-alike part that hasn't been updated for six months and few people use moves to the bottom of the lists.
 
 ## Technical rules

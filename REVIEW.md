@@ -38,7 +38,7 @@ The desk compares each part with the parts already in the store and the ones bui
 |---|---|
 | Same code: looks copied (another creator) | Decline. The desk won't let you approve it. |
 | Their own part does this already | Ask for changes: update that part instead, unless this one clearly does something else. |
-| Does the same job (another creator, or Hashikko) | Approve only if it clearly does something more. Write that in one line ("Adds a progress bar and filters"). It shows on the part's card and page. |
+| Does the same job (another creator, or Hashikko) | Approve only if it clearly does something more. Write that in one line ("Adds a progress bar and filters"). It shows on the part's page, next to the parts it looks like. |
 | The check got it wrong | Tick "They are not alike", and approve as usual. |
 
 Look-alike parts that haven't been updated for 180 days and have fewer than 10 uses move to the bottom of the store's lists by themselves.

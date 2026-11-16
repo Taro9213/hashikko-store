@@ -158,3 +158,15 @@ dd { margin: 0; }
 /* A look-alike part: what it does more than the others (written by the reviewer) */
 .ctext small.plus { color: var(--accent-ink); font-weight: 600; font-size: 13.5px; }
 p.plus { color: var(--accent-ink); font-weight: 600; margin: 4px 0 8px; }
+
+/* Part page: side by side with the parts it looks like */
+.compare { margin-top: 16px; padding: 20px 22px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+.compare h2 { margin: 0; font-size: 18px; }
+.compare > .note { margin: 4px 0 12px; }
+.crow { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 12px; }
+.crow + .crow { margin-top: 6px; }
+.crow .emoji { font-size: 26px; line-height: 1; }
+.crow small { display: block; color: var(--muted); margin-top: 2px; }
+.crow .muted { color: var(--muted); font-size: 13px; }
+.crow.me { background: var(--accent-soft); }
+.crow small.plus { color: var(--accent-ink); font-weight: 600; }

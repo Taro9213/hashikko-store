@@ -254,8 +254,8 @@ function likeBox(i) {
       <small class="muted"> (${x.shared.length ? 'same words: ' + esc(x.shared.join(', ')) + ' · ' : ''}code ${Math.round(x.codeScore * 100)}% alike)</small></li>`).join('')}</ul>
     <p class="small muted">${copied ? '<b>Decline it.</b> Copying another creator\'s part is not allowed.'
       : own ? '<b>Ask for changes</b>: this creator should update their part instead of adding a second one, unless this one clearly does something else.'
-      : 'Approve only if it clearly does something more. Write that in one line; people see it on the card, so they know which to pick.'}</p>
-    <label class="flabel" for="differs">What it does more (shown on its card)</label>
+      : 'Approve only if it clearly does something more. Write that in one line; people see it on its page, next to the part it looks like.'}</p>
+    <label class="flabel" for="differs">What it does more (shown on its page, next to the look-alike)</label>
     <input id="differs" maxlength="120" value="${esc(i.differs || '')}" placeholder="E.g. Adds a progress bar and All / To do / Done filters"
       style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit">
     <label class="ck"><input type="checkbox" id="notAlike"> <span>They are not alike (the check got it wrong)</span></label>

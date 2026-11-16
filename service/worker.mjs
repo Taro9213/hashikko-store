@@ -394,6 +394,48 @@ async function stats(env) {
   return json({ ok: true, ...s }, 200, { 'access-control-allow-origin': '*' });
 }
 
+// ---------- downloads of the app (counted on the website's Download buttons) ----------
+// The buttons on https://taro9213.github.io/hashikko/download.html point here. We count the click, then send the
+// browser on to the zip on the website. "people" counts each IP once per day (stored only as a salted hash, for 2 days).
+const SITE = 'https://taro9213.github.io/hashikko/';
+const OSES = ['mac', 'windows'];
+async function download(req, env, url) {
+  const os = url.searchParams.get('os');
+  if (!OSES.includes(os)) return Response.redirect(SITE + 'download.html', 302);
+  let target = SITE + 'download.html';
+  try {
+    const r = await fetch(SITE + 'version.json', { cf: { cacheTtl: 300 } });
+    const v = await r.json();
+    const zip = v[os === 'mac' ? 'macZip' : 'windowsZip'];
+    if (typeof zip === 'string' && /^downloads\/[A-Za-z0-9._-]+\.zip$/.test(zip)) target = SITE + zip;
+  } catch (e) { /* fall back to the download page */ }
+  const ua = req.headers.get('user-agent') || '';
+  if (!/bot|crawl|spider|preview|curl|wget/i.test(ua)) {
+    try {
+      const st = db(env);
+      const day = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);   // Japan time
+      const ip = req.headers.get('cf-connecting-ip') || 'local';
+      const seenKey = `dlseen:${day}:${os}:${(await sha256(ip + (env.RATE_SALT || 'hashikko'))).slice(0, 24)}`;
+      const isNew = !(await st.get(seenKey));
+      if (isNew) await st.put(seenKey, 1, 2 * 86400);
+      const d = (await st.get('downloads')) || { total: {}, people: {}, days: {} };
+      d.total[os] = (d.total[os] || 0) + 1;
+      if (isNew) d.people[os] = (d.people[os] || 0) + 1;
+      const t = (d.days[day] = d.days[day] || {});
+      t[os] = (t[os] || 0) + 1;
+      if (isNew) t[os + 'People'] = (t[os + 'People'] || 0) + 1;
+      for (const k of Object.keys(d.days).sort().slice(0, -90)) delete d.days[k];   // keep 90 days
+      await st.put('downloads', d);
+    } catch (e) { /* never block the download */ }
+  }
+  return Response.redirect(target, 302);
+}
+
+async function downloads(env) {
+  const d = (await db(env).get('downloads')) || { total: {}, people: {}, days: {} };
+  return json({ ok: true, ...d }, 200, { 'access-control-allow-origin': '*' });
+}
+
 // ---------- reviewers ----------
 // Decisions, modeled on YouTube's Community Guidelines strikes: the first rule-break is a warning,
 // then strikes (sharing paused 1 week, then 2 weeks), and a 3rd strike within 90 days removes the channel.
@@ -493,6 +535,8 @@ export default {
       if (req.method === 'POST' && p === '/v1/follow') return await follow(req, env);
       if (req.method === 'POST' && p === '/v1/used') return await used(req, env);
       if (req.method === 'GET' && p === '/v1/stats') return await stats(env);
+      if (req.method === 'GET' && p === '/v1/download') return await download(req, env, url);
+      if (req.method === 'GET' && p === '/v1/downloads') return await downloads(env);
       if (req.method === 'POST' && p === '/v1/admin') {
         if (!env.ADMIN_TOKEN || req.headers.get('authorization') !== 'Bearer ' + env.ADMIN_TOKEN) return json({ ok: false, reason: 'forbidden' }, 403);
         return json(await admin(env, (await readJson(req)) || {}));

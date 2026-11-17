@@ -2,7 +2,7 @@
 // App Store side: a page for every part with a clear description, who made it, and what it may do.
 // GitHub side: the full code of every part is shown, so anyone can see exactly what it does.
 //   node tools/build-web.mjs        → web/index.html, web/share.html, web/parts/<id>.html
-import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, copyFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BUILTINS } from './similar.mjs';
@@ -355,13 +355,29 @@ function share() {
   });
 }
 
+// 検索エンジン向け：ページごとの正式な住所（canonical）と、サイトマップ（sitemap.xml、Google Search Console に出す）
+const STORE_BASE = process.env.HASHIKKO_STORE_URL || 'https://taro9213.github.io/hashikko-store/';
+const sitemap = [];
+const writePage = (rel, html) => {
+  const url = STORE_BASE + (rel === 'index.html' ? '' : rel);
+  sitemap.push(url);
+  writeFileSync(join(out, rel), html.replace('</head>', `<link rel="canonical" href="${url}">\n<meta property="og:url" content="${url}">\n</head>`));
+};
+
 rmSync(out, { recursive: true, force: true });
 mkdirSync(join(out, 'parts'), { recursive: true });
 copyFileSync(join(tools, 'store.css'), join(out, 'store.css'));
-writeFileSync(join(out, 'index.html'), index());
-writeFileSync(join(out, 'share.html'), share());
-writeFileSync(join(out, 'creators.html'), creatorsIndex());
+writePage('index.html', index());
+writePage('share.html', share());
+writePage('creators.html', creatorsIndex());
 mkdirSync(join(out, 'creators'), { recursive: true });
-for (const c of creators.values()) writeFileSync(join(out, 'creators', `${c.id}.html`), creatorPage(c));
-for (const p of catalog) if (existsSync(join(root, 'parts', p.id, 'index.html'))) writeFileSync(join(out, 'parts', `${p.id}.html`), partPage(p));
+for (const c of creators.values()) writePage(`creators/${c.id}.html`, creatorPage(c));
+for (const p of catalog) if (existsSync(join(root, 'parts', p.id, 'index.html'))) writePage(`parts/${p.id}.html`, partPage(p));
+writeFileSync(join(out, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${sitemap.map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}
+</urlset>
+`);
+// Google Search Console の持ち主の確認ファイル（tools/google<印>.html。消さない。消すと確認が外れる）
+for (const f of readdirSync(tools)) if (/^google[0-9a-f]+\.html$/.test(f)) copyFileSync(join(tools, f), join(out, f));
 console.log(`web/: ${catalog.length} part page(s), ${creators.size} creator page(s)`);

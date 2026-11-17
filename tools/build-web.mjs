@@ -128,7 +128,7 @@ const card = (p, rootRel) => `<a class="card" href="${rootRel}parts/${esc(p.id)}
 const channelCard = (c, rootRel) => `<a class="card creator" href="${rootRel}creators/${esc(c.id)}.html" data-q="${esc((c.name + ' ' + (c.handle || '')).toLowerCase())}">
   ${c.id === 'hashikko' ? '<span class="avatar brandmark" aria-hidden="true"></span>' : avatar(c.name)}
   <span class="ctext"><b>${esc(c.name)}</b><small>${c.handle ? '@' + esc(c.handle) + ' · ' : ''}${c.parts.length} ${c.parts.length === 1 ? 'part' : 'parts'}</small>
-  <span class="by"><span class="followers" data-followers="${esc(c.id)}" hidden></span></span></span>
+  <span class="by">${c.id === 'hashikko' ? '' : `<span class="followers" data-followers="${esc(c.id)}" hidden></span>`}</span></span>
 </a>`;
 
 function index() {
@@ -308,7 +308,7 @@ function creatorsIndex() {
 <section class="hero"><div class="wrap">
   <p class="eyebrow">Creators</p>
   <h1>The people behind the parts.</h1>
-  <p class="lead">Anyone can make a part with AI and share it. No account needed.</p>
+  <p class="lead">Anyone can make a part with AI and share it under their own channel.</p>
 </div></section>
 <section class="list"><div class="wrap">
   <div class="grid">${list.map((c) => channelCard(c, '')).join('\n')}</div>
@@ -320,7 +320,7 @@ function creatorsIndex() {
 function share() {
   return page({
     title: 'Share your part: Hashikko Store',
-    description: 'Made a useful part with AI? Share it with everyone from inside Hashikko. No account needed.',
+    description: 'Made a useful part with AI? Share it with everyone from inside Hashikko, under your own channel.',
     rootRel: '', active: 'share',
     body: `
 <section class="hero"><div class="wrap">
